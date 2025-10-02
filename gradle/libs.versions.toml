@@ -34,6 +34,9 @@ koin = "4.1.1"
 # Image Loading
 coil = "3.3.0"
 
+# Navigation
+navigation-compose = "2.9.0"
+
 # ===========================
 
 [libraries]
@@ -71,6 +74,9 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 # Image Loading
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 
+# Navigation
+jetbrains-compose-navigation = { module ="org.jetbrains.androidx.navigation:navigation-compose", version.ref ="navigation-compose" }
+
 # ===========================
 
 [plugins]
@@ -89,6 +95,9 @@ androidx-room = { id = "androidx.room", version.ref = "androidx-room" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 compose-hot-reload = { id = "org.jetbrains.compose.hot-reload", version.ref = "compose-hot-reload" }
+
+# Serialization
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [bundles]
 # Dependency Injection

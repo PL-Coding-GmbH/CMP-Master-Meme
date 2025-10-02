@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.compose.hot.reload)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.serialization)
 }
 
 kotlin {
@@ -65,6 +66,9 @@ kotlin {
 
             // Local Persistence
             implementation(libs.bundles.androidx.room)
+
+            // Navigation
+            implementation(libs.jetbrains.compose.navigation)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
