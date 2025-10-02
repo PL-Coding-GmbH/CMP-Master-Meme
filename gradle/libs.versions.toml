@@ -25,6 +25,8 @@ androidx-room = "2.8.1"
 androidx-sqlite = "2.6.1"
 androidx-savedstate = "1.3.4"
 androidx-core-bundle = "1.0.1"
+# Android SplashScreen
+androidx-splashscreen = "1.0.1"
 
 # Dependency Injection
 koin = "4.1.1"
@@ -53,6 +55,7 @@ androidx-lifecycle-viewmodel-savedstate = { module = "org.jetbrains.androidx.lif
 # AndroidX Core
 androidx-savedstate = { module = "org.jetbrains.androidx.savedstate:savedstate", version.ref = "androidx-savedstate" }
 androidx-core-bundle = { module = "org.jetbrains.androidx.core:core-bundle", version.ref = "androidx-core-bundle" }
+androidx-splashscreen = { group = "androidx.core", name ="core-splashscreen", version.ref = "androidx-splashscreen" }
 
 # AndroidX Room
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }

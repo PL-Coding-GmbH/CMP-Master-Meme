@@ -39,6 +39,9 @@ kotlin {
             
             // Android-specific Koin
             implementation(libs.koin.android)
+
+            // Splashscreen
+            implementation(libs.androidx.splashscreen)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
