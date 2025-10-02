@@ -17,12 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 
 @Composable
 fun TemplateListSheetRoot(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onMemeTemplateSelected: () -> Unit,
+    onMemeTemplateSelected: (MemeTemplate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ModalBottomSheet(
@@ -45,9 +46,9 @@ fun TemplateListSheetRoot(
 
 @Composable
 private fun TemplateListContent(
-    onMemeTemplateSelected: () -> Unit,
+    onMemeTemplateSelected: (MemeTemplate) -> Unit,
 ) {
     Text(text = " Template List Content ", fontSize = 39.sp, modifier = Modifier.fillMaxSize().padding(14.dp).clickable {
-        onMemeTemplateSelected()
+        onMemeTemplateSelected(MemeTemplate.TEMPLATE_01)
     })
 }

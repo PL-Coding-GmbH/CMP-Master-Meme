@@ -16,19 +16,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 
 @Composable
 fun MemeListScreenRoot(
-    onMemeTemplateSelected: () -> Unit,
+    onMemeTemplateSelected: (MemeTemplate) -> Unit,
 ) {
-    MemeListScreen(
-        onMemeTemplateSelected
-    )
+    MemeListScreen(onMemeTemplateSelected)
 }
 
 @Composable
 private fun MemeListScreen(
-    onMemeTemplateSelected: () -> Unit
+    onMemeTemplateSelected: (MemeTemplate) -> Unit
 ) {
     var isSheetVisible by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -44,9 +43,7 @@ private fun MemeListScreen(
         if (isSheetVisible) {
             TemplateListSheetRoot(
                 sheetState = sheetState,
-                onMemeTemplateSelected = {
-                    onMemeTemplateSelected()
-                },
+                onMemeTemplateSelected = onMemeTemplateSelected,
                 onDismiss = {
                     isSheetVisible = false
                 }

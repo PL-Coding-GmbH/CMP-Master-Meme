@@ -18,23 +18,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
-import com.plcoding.cmpmastermeme.memelist.TemplateListSheetRoot
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 
 @Composable
 fun EditMemeScreenRoot(
+    template: MemeTemplate,
     onGoBackClick: () -> Unit,
 ) {
-    EditMemeScreen(onGoBackClick)
+    EditMemeScreen(template, onGoBackClick)
 }
 
 @Composable
 private fun EditMemeScreen(
+    template: MemeTemplate,
     onGoBackClick: () -> Unit,
 ) {
     var isSheetVisible by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("Edit Meme", fontSize = 39.sp, modifier = Modifier.clickable { isSheetVisible = true })
+        Text("Template: (${template.id})", fontSize = 16.sp)
         Button(onClick = { onGoBackClick() }) {
             Text("Go back")
         }

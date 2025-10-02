@@ -5,6 +5,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.editmeme.EditMemeScreenRoot
 import com.plcoding.cmpmastermeme.memelist.MemeListScreenRoot
 import kotlinx.serialization.Serializable
@@ -14,7 +16,7 @@ sealed interface MemeMasterGraph {
     data object MemeList : MemeMasterGraph
 
     @Serializable
-    data object EditMeme : MemeMasterGraph
+    data class EditMeme(val template: MemeTemplate) : MemeMasterGraph
 }
 
 @Composable
@@ -29,13 +31,15 @@ fun NavigationRoot(
     ) {
         composable<MemeMasterGraph.MemeList> {
             MemeListScreenRoot(
-                onMemeTemplateSelected = {
-                    navController.navigate(MemeMasterGraph.EditMeme)
+                onMemeTemplateSelected = { template ->
+                    navController.navigate(MemeMasterGraph.EditMeme(template))
                 }
             )
         }
-        composable<MemeMasterGraph.EditMeme> {
+        composable<MemeMasterGraph.EditMeme> { backStackEntry ->
+            val template = backStackEntry.toRoute<MemeMasterGraph.EditMeme>().template
             EditMemeScreenRoot(
+                template = template,
                 onGoBackClick = {
                     navController.navigateUp()
                 }
