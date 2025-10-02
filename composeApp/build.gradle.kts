@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.hot.reload)
+    alias(libs.plugins.androidx.room)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -14,6 +16,10 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+    }
+    
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
     
     listOf(
@@ -25,8 +31,6 @@ kotlin {
             isStatic = true
         }
     }
-    
-    jvm()
     
     sourceSets {
         androidMain.dependencies {
@@ -55,13 +59,12 @@ kotlin {
             
             // Image Loading
             implementation(libs.coil.compose)
+
+            // Local Persistence
+            implementation(libs.bundles.androidx.room)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-        }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 }
@@ -93,7 +96,12 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
+    add("kspCommonMainMetadata", libs.androidx.room.compiler)
     debugImplementation(compose.uiTooling)
 }
 
