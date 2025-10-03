@@ -16,7 +16,7 @@ sealed interface MemeMasterGraph {
     data object MemeList : MemeMasterGraph
 
     @Serializable
-    data class EditMeme(val template: MemeTemplate) : MemeMasterGraph
+    data class EditMeme(val templateId: String) : MemeMasterGraph
 }
 
 @Composable
@@ -32,18 +32,25 @@ fun NavigationRoot(
         composable<MemeMasterGraph.MemeList> {
             MemeListScreenRoot(
                 onMemeTemplateSelected = { template ->
-                    navController.navigate(MemeMasterGraph.EditMeme(template))
+                    navController.navigate(MemeMasterGraph.EditMeme(template.id))
                 }
             )
         }
         composable<MemeMasterGraph.EditMeme> { backStackEntry ->
-            val template = backStackEntry.toRoute<MemeMasterGraph.EditMeme>().template
-            EditMemeScreenRoot(
-                template = template,
-                onGoBackClick = {
-                    navController.navigateUp()
-                }
-            )
+            val templateId = backStackEntry.toRoute<MemeMasterGraph.EditMeme>().templateId
+            // NOTE can also provide default template if app should not fail fast: ?: MemeTemplate.TEMPLATE_01
+            val template = MemeTemplate.fromId(templateId) ?: run {
+                navController.navigateUp()
+                null
+            }
+            template?.let {
+                EditMemeScreenRoot(
+                    template = it,
+                    onGoBackClick = {
+                        navController.navigateUp()
+                    }
+                )
+            }
         }
     }
 }

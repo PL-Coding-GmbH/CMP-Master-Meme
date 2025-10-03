@@ -3,7 +3,11 @@ package com.plcoding.cmpmastermeme.core.database
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
+@TypeConverters(
+    value = [UuidTypeConverter::class]
+)
 @Database(
     entities = [MemeEntity::class],
     version = 1,

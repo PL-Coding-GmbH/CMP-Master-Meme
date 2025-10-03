@@ -21,6 +21,8 @@ kotlin {
     
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.add("-opt-in=kotlin.uuid.ExperimentalUuidApi")
+        freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime")
     }
     
     listOf(
@@ -108,8 +110,21 @@ room {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.androidx.room.compiler)
+    add("ksp", libs.androidx.room.compiler)
     debugImplementation(compose.uiTooling)
+}
+
+/*
+    Fix KSP dependency on Compose resource generation (Android-only issue that looks to be an issue
+    introduced in current dependency versions of either Room, KSP, or Kotlin
+ */
+afterEvaluate {
+    tasks.matching { it.name.startsWith("ksp") && it.name.contains("Android") }.configureEach {
+        dependsOn(tasks.matching { it.name.contains("generateResourceAccessors") })
+        dependsOn(tasks.matching { it.name.contains("generateComposeResClass") })
+        dependsOn(tasks.matching { it.name.contains("generateActualResourceCollectors") })
+        dependsOn(tasks.matching { it.name.contains("generateExpectResourceCollectors") })
+    }
 }
 
 compose.desktop {
