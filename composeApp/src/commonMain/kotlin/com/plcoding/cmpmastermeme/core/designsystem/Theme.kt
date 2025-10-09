@@ -12,7 +12,7 @@ fun MasterMemeTheme(
     val extendedColors = darkExtendedColors
     CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = DarkColorScheme,
             typography = Typography,
             content = content
         )
