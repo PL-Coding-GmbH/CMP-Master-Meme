@@ -6,7 +6,9 @@ import com.plcoding.cmpmastermeme.core.data.RoomLocalMemeDataSource
 import com.plcoding.cmpmastermeme.core.database.DatabaseFactory
 import com.plcoding.cmpmastermeme.core.database.MasterMemeDatabase
 import com.plcoding.cmpmastermeme.core.domain.LocalMemeDataSource
+import com.plcoding.cmpmastermeme.editmeme.EditMemeViewModel
 import kotlinx.coroutines.CoroutineScope
+import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.bind
@@ -24,7 +26,7 @@ object KoinModules {
     }
 
     private val databaseModule = module {
-    single<MasterMemeDatabase> {
+        single<MasterMemeDatabase> {
             get<DatabaseFactory>().create()
                 .setDriver(
                     BundledSQLiteDriver()
@@ -33,10 +35,15 @@ object KoinModules {
         }
     }
 
+    private val editMemeModule = module {
+        viewModelOf(::EditMemeViewModel)
+    }
+
     val allModules = listOf(
         appModule,
         coreDataModule,
         coreDataPlatformModule,
         databaseModule,
+        editMemeModule
     )
 }
