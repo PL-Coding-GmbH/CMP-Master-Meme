@@ -24,12 +24,12 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun OutlinedText(
     text: String,
     fontSize: Float,
+    modifier: Modifier = Modifier,
     fontFamily: FontFamily = Impact,
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
     strokeWidth: Float = 8f,
-    textAlign: TextAlign = TextAlign.Center,
-    modifier: Modifier = Modifier
+    textAlign: TextAlign = TextAlign.Center
 ) {
     val textMeasurer = rememberTextMeasurer()
 
@@ -47,7 +47,7 @@ fun OutlinedText(
     val density = LocalDensity.current
 
     Canvas(
-        modifier = modifier
+        modifier = modifier.background(Color.Transparent)
             .size(
                 width = with(density) { textLayoutResult.size.width.toDp() },
                 height = with(density) { textLayoutResult.size.height.toDp() }
@@ -79,7 +79,7 @@ private fun Preview() {
             fontFamily = Impact,
             fillColor = Color.White,
             strokeColor = Color.Black,
-            modifier = Modifier.background(Color.Yellow)
+            modifier = Modifier
         )
     }
 }

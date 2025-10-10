@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -59,7 +58,7 @@ fun OutlinedTextField(
     modifier: Modifier = Modifier,
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
-    strokeWidth: Float = 3f,
+    strokeWidth: Float = 8f,
     textAlign: TextAlign = TextAlign.Center,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     keyboardOptions: KeyboardOptions = KeyboardOptions(
@@ -69,10 +68,7 @@ fun OutlinedTextField(
 ) {
     var textFieldValue by remember {
         mutableStateOf(
-            TextFieldValue(
-                text = text,
-                selection = TextRange(0, text.length)
-            )
+            TextFieldValue(text)
         )
     }
     

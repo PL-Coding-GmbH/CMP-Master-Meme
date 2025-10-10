@@ -3,15 +3,16 @@ package com.plcoding.cmpmastermeme.editmeme.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +32,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.Impact
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.editmeme.models.TextBox
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
@@ -42,7 +48,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  * - User interactions (selection, deletion)
  * - Container styling (borders, backgrounds)
  * - Focus management for editing
- * 
+ *
  * Uses OutlinedText for display and OutlinedTextField for editing
  * to achieve the white-text-with-black-outline meme style.
  */
@@ -51,12 +57,23 @@ fun MemeTextBox(
     textBox: TextBox,
     isSelected: Boolean,
     isEditing: Boolean,
+    onClick: () -> Unit,
+    onDoubleClick: () -> Unit,
     onTextInputChange: (String) -> Unit,
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var isDragging by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
+    val editableTextBox = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(isEditing) {
+        if (isEditing) {
+            editableTextBox.requestFocus()
+            delay(100)
+            keyboardController?.show()
+        }
+    }
 
     Box(
         modifier = modifier
@@ -66,10 +83,16 @@ fun MemeTextBox(
                 shape = RoundedCornerShape(4.dp)
             )
             .background(
-                color = if (isDragging) Color.LightGray.copy(alpha = 0.5f)
-                else Color.White,
+                color = if (false) Color.LightGray.copy(alpha = 0.5f)
+                else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onDoubleTap = { onDoubleClick() }
+                )
+            }
     ) {
         if (isEditing) {
             OutlinedTextField(
@@ -78,20 +101,16 @@ fun MemeTextBox(
                 fontFamily = Impact,
                 onTextChange = onTextInputChange,
                 modifier = Modifier
-                    .focusRequester(focusRequester)
+                    .focusRequester(editableTextBox)
                     .padding(4.dp)
             )
         } else {
             OutlinedText(
                 text = textBox.text,
                 fontSize = textBox.fontSize,
-                fontFamily = Impact,
-                fillColor = Color.White,
-                strokeColor = Color.Black,
                 modifier = Modifier.padding(4.dp)
             )
         }
-        
         if (isSelected && !isEditing) {
             Box(
                 modifier = Modifier
@@ -117,10 +136,10 @@ fun MemeTextBox(
 @Preview
 @Composable
 private fun Preview() {
-    var isSelected by remember { mutableStateOf(false) }
+    var isSelected by remember { mutableStateOf(true) }
     var isEditing by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("TAP TO SELECT") }
-    
+
     MasterMemeTheme {
         Column(
             modifier = Modifier
@@ -138,21 +157,16 @@ private fun Preview() {
                 isSelected = isSelected,
                 isEditing = isEditing,
                 onTextInputChange = { text = it },
-                onDelete = { 
-                    text = "DELETED"
+                onDelete = {
                     isSelected = false
+                    isEditing = false
                 },
-                modifier = Modifier.clickable {
-                    if (!isSelected) {
-                        isSelected = true
-                    } else if (!isEditing) {
-                        isEditing = true
-                    }
-                }
+                onClick = { isSelected = true; isEditing = false },
+                onDoubleClick = { isEditing = true; isSelected = false }
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = {
                     isSelected = false
