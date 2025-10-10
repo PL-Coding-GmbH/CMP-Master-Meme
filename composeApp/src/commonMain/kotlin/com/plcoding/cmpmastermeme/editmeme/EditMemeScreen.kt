@@ -28,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
 import cmpmastermeme.composeapp.generated.resources.add_text
 import cmpmastermeme.composeapp.generated.resources.save_meme
@@ -39,6 +41,10 @@ import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
+import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
+import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -49,8 +55,12 @@ fun EditMemeScreenRoot(
     onGoBackClick: () -> Unit,
     viewModel: EditMemeViewModel = koinViewModel()
 ) {
+
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     EditMemeScreen(
         template = template,
+        state = state,
         onAction = { action ->
             when (action) {
                 EditMemeAction.OnGoBackClick -> onGoBackClick()
@@ -63,6 +73,7 @@ fun EditMemeScreenRoot(
 
 @Composable
 private fun EditMemeScreen(
+    state: EditMemeState,
     template: MemeTemplate,
     onAction: (EditMemeAction) -> Unit,
 ) {
@@ -80,45 +91,13 @@ private fun EditMemeScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-                ),
-                title = {
-                    Text(
-                        text = Res.string.title_new_meme.asString(),
-                        style = MaterialTheme.typography.headlineLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onAction(EditMemeAction.OnGoBackClick) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
+            TopBar(onGoBackClick = { onAction(EditMemeAction.OnGoBackClick) })
         },
         bottomBar = {
-            Row(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
-            ) {
-                MemeSecondaryButton(
-                    text = Res.string.add_text.asString(),
-                    onClick = { onAction(EditMemeAction.OnAddTextToTemplateClick) }
-                )
-                MemePrimaryButton(
-                    text = Res.string.save_meme.asString(),
-                    onClick = { onAction(EditMemeAction.OnSaveMemeClick) }
-                )
-            }
+            BottomBar(
+                onSaveMemeClick = { onAction(EditMemeAction.OnSaveMemeClick) },
+                onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) }
+            )
         }
     ) { paddingValues ->
         Box(
@@ -133,7 +112,78 @@ private fun EditMemeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
             )
+            state.memeTexts.forEach { textBox ->
+                MemeTextBox(
+                    memeText = textBox,
+                    isSelected = textBox.id == state.selectedTextBoxId,
+                    isEditing = textBox.id == state.editingTextBoxId,
+                    onTextInputChange = {
+                        onAction(
+                            EditMemeAction.OnMemeTextChange(
+                                id = textBox.id,
+                                text = it
+                            )
+                        )
+                    },
+                    onDelete = { onAction(EditMemeAction.OnDeleteMemeText(textBox.id)) },
+                    onClick = { onAction(EditMemeAction.OnSelectMemeText(textBox.id)) },
+                    onDoubleClick = { onAction(EditMemeAction.OnEditMemeText(textBox.id)) }
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun TopBar(
+    onGoBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    CenterAlignedTopAppBar(
+        modifier = modifier,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+        ),
+        title = {
+            Text(
+                text = Res.string.title_new_meme.asString(),
+                style = MaterialTheme.typography.headlineLarge
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onGoBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun BottomBar(
+    modifier: Modifier = Modifier,
+    onAddTextClick: () -> Unit,
+    onSaveMemeClick: () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
+    ) {
+        MemeSecondaryButton(
+            text = Res.string.add_text.asString(),
+            onClick = onAddTextClick
+        )
+        MemePrimaryButton(
+            text = Res.string.save_meme.asString(),
+            onClick = onSaveMemeClick
+        )
     }
 }
 
@@ -143,7 +193,20 @@ private fun Preview() {
     MasterMemeTheme {
         EditMemeScreen(
             template = MemeTemplate.TEMPLATE_02,
-            onAction = {}
+            onAction = {},
+            state = EditMemeState(
+                memeTexts = listOf(
+                    MemeText(
+                        id = 0,
+                        text = "Text #1",
+                    ),
+                    MemeText(
+                        id = 1,
+                        text = "Text #2",
+                        position = Offset(x = 100f, y = 100f)
+                    )
+                )
+            )
         )
     }
 }

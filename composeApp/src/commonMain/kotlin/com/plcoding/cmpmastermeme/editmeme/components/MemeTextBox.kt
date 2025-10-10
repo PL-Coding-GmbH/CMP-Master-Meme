@@ -38,7 +38,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.Impact
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
-import com.plcoding.cmpmastermeme.editmeme.models.TextBox
+import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -54,7 +54,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
  */
 @Composable
 fun MemeTextBox(
-    textBox: TextBox,
+    memeText: MemeText,
     isSelected: Boolean,
     isEditing: Boolean,
     onClick: () -> Unit,
@@ -63,15 +63,21 @@ fun MemeTextBox(
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val editableTextBox = remember { FocusRequester() }
+    val editableMemeText = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(isEditing) {
         if (isEditing) {
-            editableTextBox.requestFocus()
+            editableMemeText.requestFocus()
             delay(100)
             keyboardController?.show()
+        }
+    }
+
+    LaunchedEffect(isSelected) {
+        if (!isSelected) {
+            focusManager.clearFocus()
         }
     }
 
@@ -79,7 +85,7 @@ fun MemeTextBox(
         modifier = modifier
             .border(
                 width = 1.dp,
-                color = if (isSelected) Color.White else Color.Transparent,
+                color = if (isSelected || isEditing) Color.White else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
             .background(
@@ -96,22 +102,22 @@ fun MemeTextBox(
     ) {
         if (isEditing) {
             OutlinedTextField(
-                text = textBox.text,
-                fontSize = textBox.fontSize,
+                text = memeText.text,
+                fontSize = memeText.fontSize,
                 fontFamily = Impact,
                 onTextChange = onTextInputChange,
                 modifier = Modifier
-                    .focusRequester(editableTextBox)
+                    .focusRequester(editableMemeText)
                     .padding(4.dp)
             )
         } else {
             OutlinedText(
-                text = textBox.text,
-                fontSize = textBox.fontSize,
+                text = memeText.text,
+                fontSize = memeText.fontSize,
                 modifier = Modifier.padding(4.dp)
             )
         }
-        if (isSelected && !isEditing) {
+        if (isSelected || isEditing) {
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -150,7 +156,7 @@ private fun Preview() {
             verticalArrangement = Arrangement.Center
         ) {
             MemeTextBox(
-                textBox = TextBox(
+                memeText = MemeText(
                     id = 1,
                     text = text
                 ),
