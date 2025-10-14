@@ -2,4 +2,8 @@
     <string name="title_new_meme">New meme</string>
     <string name="add_text">Add text</string>
     <string name="save_meme">Save meme</string>
+    <string name="save_to_device">Save to device</string>
+    <string name="save_to_device_desc">Save created meme in the Files of your device</string>
+    <string name="share_meme">Share the meme</string>
+    <string name="share_meme_desc">Share your meme or open it in the other App</string>
 </resources>

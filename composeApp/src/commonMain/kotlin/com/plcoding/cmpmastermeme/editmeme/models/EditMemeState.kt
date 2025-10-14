@@ -7,4 +7,5 @@ data class EditMemeState(
     val memeTexts: List<MemeText> = emptyList(),
     val selectedTextBoxId: Int? = null,
     val editingTextBoxId: Int? = null,
+    val isFinalisingMeme: Boolean = false
 )

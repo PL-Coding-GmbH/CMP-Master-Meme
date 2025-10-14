@@ -36,10 +36,21 @@ class EditMemeViewModel(
 
             /* Handled in UI */
             EditMemeAction.OnGoBackClick -> Unit
+            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
+            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
+        }
+    }
+
+    private fun toggleIsFinalisingMeme(isFinalising: Boolean) {
+        _state.update {
+            it.copy(isFinalisingMeme = isFinalising)
         }
     }
 
     private fun saveMeme(memeTemplate: MemeTemplate) = viewModelScope.launch{
+        _state.update {
+            it.copy(isFinalisingMeme = false)
+        }
         val templateBytes = getDrawableResourceBytes(
             environment = getSystemResourceEnvironment(),
             resource = memeTemplate.drawableResource

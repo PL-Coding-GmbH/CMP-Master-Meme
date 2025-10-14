@@ -55,16 +55,16 @@ val Typography: Typography
         bodyLarge = TextStyle(
             fontFamily = Manrope,
             fontWeight = FontWeight.Normal,
-            fontSize = 22.sp,
+            fontSize = 20.sp,
         ),
         bodyMedium = TextStyle(
             fontFamily = Manrope,
             fontWeight = FontWeight.Normal,
-            fontSize = 22.sp,
+            fontSize = 16.sp,
         ),
         bodySmall = TextStyle(
             fontFamily = Manrope,
             fontWeight = FontWeight.Normal,
-            fontSize = 22.sp,
+            fontSize = 12.sp,
         ),
     )

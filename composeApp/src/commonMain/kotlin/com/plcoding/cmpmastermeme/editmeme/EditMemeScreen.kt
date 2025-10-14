@@ -87,14 +87,15 @@ private fun EditMemeScreen(
     template: MemeTemplate,
     onAction: (EditMemeAction) -> Unit,
 ) {
-    var isSheetVisible by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    if (isSheetVisible) {
+    if (state.isFinalisingMeme) {
         SaveMemeContextSheetRoot(
-            onSaveClick = {},
-            onShareClick = {},
-            onDismiss = { isSheetVisible = false },
+            onSaveClick = { onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template)) },
+            onShareClick = {  },
+            onDismiss = {
+                onAction(EditMemeAction.OnContinueEditing)
+                        },
             sheetState = sheetState,
         )
     }
@@ -105,7 +106,7 @@ private fun EditMemeScreen(
         },
         bottomBar = {
             BottomBar(
-                onSaveMemeClick = { onAction(EditMemeAction.OnSaveMemeClick(template)) },
+                onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) }
             )
         }
