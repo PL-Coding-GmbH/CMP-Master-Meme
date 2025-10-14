@@ -2,9 +2,12 @@
 
 package com.plcoding.cmpmastermeme.memelist
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,12 +33,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cmpmastermeme.composeapp.generated.resources.Res
+import cmpmastermeme.composeapp.generated.resources.create_first_meme
+import cmpmastermeme.composeapp.generated.resources.empty_meme
+import cmpmastermeme.composeapp.generated.resources.meme_empty_list
+import cmpmastermeme.composeapp.generated.resources.title_new_meme
+import cmpmastermeme.composeapp.generated.resources.title_your_memes
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.asString
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -63,6 +78,21 @@ private fun MemeListScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = Res.string.title_your_memes.asString(),
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+                ),
+            )
+        },
         floatingActionButton = {
             MemeFloatingActionButton(
                 onClick = { onAction(MemeListAction.OnCreateNewMeme) }
@@ -81,6 +111,23 @@ private fun MemeListScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        if (state.memes.isEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.empty_meme),
+                    contentDescription = null
+                )
+                Text(
+                    text = stringResource(Res.string.meme_empty_list),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.outline,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
         if (state.isCreatingNewMeme) {
             TemplateListSheetRoot(
                 sheetState = sheetState,
