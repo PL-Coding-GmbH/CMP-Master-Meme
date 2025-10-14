@@ -92,10 +92,10 @@ private fun EditMemeScreen(
     if (state.isFinalisingMeme) {
         SaveMemeContextSheetRoot(
             onSaveClick = { onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template)) },
-            onShareClick = {  },
+            onShareClick = { onAction(EditMemeAction.OnShareMemeClick(memeTemplate = template)) },
             onDismiss = {
                 onAction(EditMemeAction.OnContinueEditing)
-                        },
+            },
             sheetState = sheetState,
         )
     }

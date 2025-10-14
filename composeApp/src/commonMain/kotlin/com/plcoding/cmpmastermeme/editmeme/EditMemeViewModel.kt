@@ -6,13 +6,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
 import org.koin.core.component.KoinComponent
@@ -20,28 +26,54 @@ import org.koin.core.component.get
 import org.koin.core.qualifier.named
 
 class EditMemeViewModel(
-    private val memeExporter: MemeExporter
+    private val memeExporter: MemeExporter,
+    private val sendableFileManager: SendableFileManager
 ) : ViewModel(), KoinComponent {
 
     private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
 
     fun onAction(action: EditMemeAction) {
-        when(action) {
+        when (action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
             is EditMemeAction.OnSaveMemeClick -> saveMeme(action.memeTemplate)
             is EditMemeAction.OnDeleteMemeText -> removeTextBox(action.id)
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
-            is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(textBoxId = action.id, text = action.text)
-            is EditMemeAction.OnMemeTextPositionChange -> onTextBoxPositionChange(textBoxId = action.id, x = action.x, y = action.y)
+            is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
+                textBoxId = action.id,
+                text = action.text
+            )
+
+            is EditMemeAction.OnMemeTextPositionChange -> onTextBoxPositionChange(
+                textBoxId = action.id,
+                x = action.x,
+                y = action.y
+            )
+
             is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
+            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
+            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
+            is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
 
             /* Handled in UI */
             EditMemeAction.OnGoBackClick -> Unit
-            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
-            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
         }
+    }
+
+    private fun shareMeme(memeTemplate: MemeTemplate) = viewModelScope.launch {
+        _state.update {
+            it.copy(isFinalisingMeme = false)
+        }
+        memeExporter.exportMeme(
+            backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
+            textBoxes = state.value.memeTexts,
+            canvasSize = state.value.templateSize,
+            saveStrategy = get(named("cache"))
+        )
+            .onSuccess {
+                sendableFileManager.shareFile(it)
+            }
     }
 
     private fun toggleIsFinalisingMeme(isFinalising: Boolean) {
@@ -50,19 +82,27 @@ class EditMemeViewModel(
         }
     }
 
-    private fun saveMeme(memeTemplate: MemeTemplate) = viewModelScope.launch{
+    private fun saveMeme(memeTemplate: MemeTemplate) = viewModelScope.launch {
         _state.update {
             it.copy(isFinalisingMeme = false)
         }
-        val templateBytes = getDrawableResourceBytes(
-            environment = getSystemResourceEnvironment(),
-            resource = memeTemplate.drawableResource
-        )
+
         memeExporter.exportMeme(
-            backgroundImageBytes = templateBytes,
+            backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
             textBoxes = state.value.memeTexts,
             canvasSize = state.value.templateSize,
             saveStrategy = get(named("private_dir"))
+        )
+    }
+
+    /*
+        Couldn't determine if this function was main-safe
+        See https://www.jetbrains.com/help/kotlin-multiplatform-dev/whats-new-compose-1610.html#experimental-byte-array-functions-for-images-and-fonts
+     */
+    private suspend fun DrawableResource.getBytes(): ByteArray = withContext(Dispatchers.IO) {
+        return@withContext getDrawableResourceBytes(
+            environment = getSystemResourceEnvironment(),
+            resource = this@getBytes
         )
     }
 

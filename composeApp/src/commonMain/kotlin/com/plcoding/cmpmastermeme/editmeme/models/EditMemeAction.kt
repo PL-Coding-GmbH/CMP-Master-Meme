@@ -7,6 +7,7 @@ sealed interface EditMemeAction {
     data object OnGoBackClick : EditMemeAction
     data object OnCompleteEditingClick : EditMemeAction
     data class OnSaveMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
+    data class OnShareMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
     data object OnAddNewMemeTextClick : EditMemeAction
     data class OnMemeTextChange(val id: Int, val text: String) : EditMemeAction
     data class OnMemeTextPositionChange(val id: Int, val x: Float, val y: Float) : EditMemeAction
