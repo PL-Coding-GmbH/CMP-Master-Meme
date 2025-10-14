@@ -6,4 +6,6 @@
     <string name="save_to_device_desc">Save created meme in the Files of your device</string>
     <string name="share_meme">Share the meme</string>
     <string name="share_meme_desc">Share your meme or open it in the other App</string>
+    <string name="choose_template">Choose template</string>
+    <string name="choose_template_desc">Choose template for your next meme masterpiece</string>
 </resources>

@@ -31,7 +31,7 @@ fun NavigationRoot(
     ) {
         composable<MemeMasterGraph.MemeList> {
             MemeListScreenRoot(
-                onMemeTemplateSelected = { template ->
+                onNavigateToEditTemplateSelected = { template ->
                     navController.navigate(MemeMasterGraph.EditMeme(template.id))
                 }
             )

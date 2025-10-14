@@ -7,6 +7,7 @@ import com.plcoding.cmpmastermeme.core.database.DatabaseFactory
 import com.plcoding.cmpmastermeme.core.database.MasterMemeDatabase
 import com.plcoding.cmpmastermeme.core.domain.LocalMemeDataSource
 import com.plcoding.cmpmastermeme.editmeme.EditMemeViewModel
+import com.plcoding.cmpmastermeme.memelist.MemeListViewModel
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
@@ -35,8 +36,9 @@ object KoinModules {
         }
     }
 
-    private val editMemeModule = module {
+    private val memeModule = module {
         viewModelOf(::EditMemeViewModel)
+        viewModelOf(::MemeListViewModel)
     }
 
     val allModules = listOf(
@@ -44,6 +46,6 @@ object KoinModules {
         coreDataModule,
         coreDataPlatformModule,
         databaseModule,
-        editMemeModule
+        memeModule
     )
 }
