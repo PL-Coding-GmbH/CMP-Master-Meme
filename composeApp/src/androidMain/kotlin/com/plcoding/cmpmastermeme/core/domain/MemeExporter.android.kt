@@ -15,8 +15,6 @@ import com.plcoding.cmpmastermeme.R
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -28,14 +26,17 @@ actual class MemeExporter(
         backgroundImageBytes: ByteArray,
         textBoxes: List<MemeText>,
         canvasSize: IntSize,
-        fileName: String
+        fileName: String,
+        saveStrategy: SaveToStorageStrategy,
     ) = withContext(Dispatchers.IO) {
 
         try {
             val bitmap = BitmapFactory.decodeByteArray(backgroundImageBytes, 0, backgroundImageBytes.size)
             val outputBitmap = renderMeme(bitmap, textBoxes, canvasSize)
 
-            val file = File(context.getExternalFilesDir(null), "meme_${System.currentTimeMillis()}.png")
+            val filePath = saveStrategy.getFilePath(fileName)
+            val file = File(filePath)
+
             // TODO co-operative compression
             FileOutputStream(file).use { out ->
                 outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)

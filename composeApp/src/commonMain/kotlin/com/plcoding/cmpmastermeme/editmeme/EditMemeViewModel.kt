@@ -15,10 +15,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
+import org.koin.core.qualifier.named
 
 class EditMemeViewModel(
     private val memeExporter: MemeExporter
-) : ViewModel() {
+) : ViewModel(), KoinComponent {
 
     private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
@@ -59,6 +62,7 @@ class EditMemeViewModel(
             backgroundImageBytes = templateBytes,
             textBoxes = state.value.memeTexts,
             canvasSize = state.value.templateSize,
+            saveStrategy = get(named("private_dir"))
         )
     }
 
@@ -85,7 +89,7 @@ class EditMemeViewModel(
             )
         }
     }
-    
+
     private fun updateTemplateSize(size: IntSize) {
         _state.update {
             it.copy(templateSize = size)
@@ -121,7 +125,7 @@ class EditMemeViewModel(
     private fun createTextBox() = viewModelScope.launch {
         val currentState = state.value
         val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
-        
+
         // Place new text at top-left corner
         val position = Offset(0f, 0f)
 
