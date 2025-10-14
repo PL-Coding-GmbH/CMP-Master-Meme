@@ -26,6 +26,7 @@ class EditMemeViewModel(
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
             is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(textBoxId = action.id, text = action.text)
+            is EditMemeAction.OnMemeTextPositionChange -> onTextBoxPositionChange(textBoxId = action.id, x = action.x, y = action.y)
 
             /* Handled in UI */
             EditMemeAction.OnGoBackClick -> Unit
@@ -38,6 +39,20 @@ class EditMemeViewModel(
                 memeTexts = it.memeTexts.map { textBox ->
                     if (textBox.id == textBoxId) {
                         textBox.copy(text = text)
+                    } else textBox
+                }
+            )
+        }
+    }
+
+    private fun onTextBoxPositionChange(textBoxId: Int, x: Float, y: Float) {
+        _state.update {
+            it.copy(
+                memeTexts = it.memeTexts.map { textBox ->
+                    if (textBox.id == textBoxId) {
+//                        val updated = textBox.copy(offset = Offset(x, y))
+//                        updated
+                        textBox
                     } else textBox
                 }
             )
@@ -81,7 +96,7 @@ class EditMemeViewModel(
         val newBox = MemeText(
             id = newId,
             text = "Tap to edit",
-            position = position,
+            offset = position,
         )
 
         _state.update {

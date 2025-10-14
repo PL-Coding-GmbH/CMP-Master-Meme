@@ -4,12 +4,17 @@ package com.plcoding.cmpmastermeme.editmeme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -28,8 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
@@ -48,6 +56,7 @@ import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.roundToInt
 
 @Composable
 fun EditMemeScreenRoot(
@@ -106,28 +115,103 @@ private fun EditMemeScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Image(
-                bitmap = imageResource(template.drawableResource),
-                contentDescription = template.id,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth
-            )
-            state.memeTexts.forEach { textBox ->
+            Box {
+                Image(
+                    bitmap = imageResource(template.drawableResource),
+                    contentDescription = template.id,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.FillWidth
+                )
+                DraggableContainer(
+                    children = state.memeTexts,
+                    selectedChildId = state.selectedTextBoxId,
+                    editingChildId = state.editingTextBoxId,
+                    onAction = onAction,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DraggableContainer(
+    modifier: Modifier = Modifier,
+    children: List<MemeText>,
+    selectedChildId: Int?,
+    editingChildId: Int?,
+    onAction: (EditMemeAction) -> Unit
+) {
+    BoxWithConstraints(
+        modifier = modifier
+            .border(4.dp, Color.Gray)
+    ) {
+        val parentWidth = constraints.maxWidth
+        val parentHeight = constraints.maxHeight
+        println("kai parent width and height $parentWidth x $parentHeight")
+
+
+        children.forEach { child ->
+            var offsetX by remember(child.id) { mutableStateOf(child.offset.x) }
+            var offsetY by remember(child.id) { mutableStateOf(child.offset.y) }
+            var childWidth by remember { mutableStateOf(0) }
+            var childHeight by remember { mutableStateOf(0) }
+
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                    .onPlaced { coordinates ->
+                        // Get the actual size of the child
+                        childWidth = coordinates.size.width
+                        childHeight = coordinates.size.height
+
+                        // Ensure child stays within bounds after measurement
+                        val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
+                        val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+
+                        offsetX = offsetX.coerceIn(0f, maxX)
+                        offsetY = offsetY.coerceIn(0f, maxY)
+
+                        onAction(
+                            EditMemeAction.OnMemeTextPositionChange(
+                                id = child.id,
+                                x = offsetX,
+                                y = offsetY
+                            )
+                        )
+                    }
+                    .pointerInput(child.id, selectedChildId) {
+                        detectDragGestures { _, dragAmount ->
+                            if (selectedChildId == child.id) {
+                                val newX = offsetX + dragAmount.x
+                                val newY = offsetY + dragAmount.y
+
+                                // Constrain to parent bounds
+                                val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
+                                val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+
+                                offsetX = newX.coerceIn(0f, maxX)
+                                offsetY = newY.coerceIn(0f, maxY)
+                            }
+                        }
+                    }
+            ) {
                 MemeTextBox(
-                    memeText = textBox,
-                    isSelected = textBox.id == state.selectedTextBoxId,
-                    isEditing = textBox.id == state.editingTextBoxId,
+                    memeText = child,
+                    modifier = Modifier.widthIn(max = (parentWidth * 0.5f).dp),
+                    isSelected = child.id == selectedChildId,
+                    isEditing = child.id == editingChildId,
                     onTextInputChange = {
                         onAction(
                             EditMemeAction.OnMemeTextChange(
-                                id = textBox.id,
+                                id = child.id,
                                 text = it
                             )
                         )
                     },
-                    onDelete = { onAction(EditMemeAction.OnDeleteMemeText(textBox.id)) },
-                    onClick = { onAction(EditMemeAction.OnSelectMemeText(textBox.id)) },
-                    onDoubleClick = { onAction(EditMemeAction.OnEditMemeText(textBox.id)) }
+                    onDelete = { onAction(EditMemeAction.OnDeleteMemeText(child.id)) },
+                    onClick = { onAction(EditMemeAction.OnSelectMemeText(child.id)) },
+                    onDoubleClick = { onAction(EditMemeAction.OnEditMemeText(child.id)) }
                 )
             }
         }
@@ -203,7 +287,6 @@ private fun Preview() {
                     MemeText(
                         id = 1,
                         text = "Text #2",
-                        position = Offset(x = 100f, y = 100f)
                     )
                 )
             )

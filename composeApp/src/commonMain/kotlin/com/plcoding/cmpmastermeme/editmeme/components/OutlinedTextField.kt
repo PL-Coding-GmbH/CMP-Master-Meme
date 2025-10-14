@@ -85,7 +85,7 @@ fun OutlinedTextField(
         text = AnnotatedString(textFieldValue.text.ifEmpty { " " }), // Ensure minimum size
         style = textStyle
     )
-    
+
     val textSize = with(density) {
         DpSize(
             width = textLayoutResult.size.width.toDp(),

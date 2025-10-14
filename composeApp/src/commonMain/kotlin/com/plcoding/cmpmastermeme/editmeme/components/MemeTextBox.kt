@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -75,7 +76,7 @@ fun MemeTextBox(
         }
     }
 
-    LaunchedEffect(isSelected) {
+    LaunchedEffect(isSelected, memeText.id) {
         if (!isSelected) {
             focusManager.clearFocus()
         }
@@ -89,8 +90,9 @@ fun MemeTextBox(
                 shape = RoundedCornerShape(4.dp)
             )
             .background(
-                color = if (false) Color.LightGray.copy(alpha = 0.5f)
-                else Color.Transparent,
+                color = if (isEditing) {
+                    Color.LightGray.copy(alpha = 0.5f)
+                } else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
             .pointerInput(Unit) {
@@ -145,21 +147,32 @@ private fun Preview() {
     var isSelected by remember { mutableStateOf(true) }
     var isEditing by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("TAP TO SELECT") }
+    var placement by remember {
+        mutableStateOf(
+            Offset.Zero
+        )
+    }
+    var memeText by remember(text, placement) {
+        mutableStateOf(
+            MemeText(
+                id = 1,
+                text = text,
+                offset = placement
+            )
+        )
+    }
 
     MasterMemeTheme {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Gray)
-                .padding(48.dp),
+                .background(Color.Yellow.copy(alpha = 0.2f))
+                .size(400.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             MemeTextBox(
-                memeText = MemeText(
-                    id = 1,
-                    text = text
-                ),
+                memeText = memeText,
                 isSelected = isSelected,
                 isEditing = isEditing,
                 onTextInputChange = { text = it },

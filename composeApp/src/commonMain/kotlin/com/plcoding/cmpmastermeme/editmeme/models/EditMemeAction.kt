@@ -5,6 +5,7 @@ sealed interface EditMemeAction {
     data object OnSaveMemeClick : EditMemeAction
     data object OnAddNewMemeTextClick : EditMemeAction
     data class OnMemeTextChange(val id: Int, val text: String) : EditMemeAction
+    data class OnMemeTextPositionChange(val id: Int, val x: Float, val y: Float) : EditMemeAction
     data class OnDeleteMemeText(val id: Int) : EditMemeAction
     data class OnSelectMemeText(val id: Int) : EditMemeAction
     data class OnEditMemeText(val id: Int) : EditMemeAction
