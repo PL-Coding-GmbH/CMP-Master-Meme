@@ -38,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
@@ -104,7 +105,7 @@ private fun EditMemeScreen(
         },
         bottomBar = {
             BottomBar(
-                onSaveMemeClick = { onAction(EditMemeAction.OnSaveMemeClick) },
+                onSaveMemeClick = { onAction(EditMemeAction.OnSaveMemeClick(template)) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) }
             )
         }
@@ -119,7 +120,16 @@ private fun EditMemeScreen(
                 Image(
                     bitmap = imageResource(template.drawableResource),
                     contentDescription = template.id,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPlaced { layoutCoordinates ->
+                            val size = layoutCoordinates.size
+                            onAction(
+                                EditMemeAction.OnContainerSizeChanged(
+                                    IntSize(size.width, size.height)
+                                )
+                            )
+                        },
                     contentScale = ContentScale.FillWidth
                 )
                 DraggableContainer(

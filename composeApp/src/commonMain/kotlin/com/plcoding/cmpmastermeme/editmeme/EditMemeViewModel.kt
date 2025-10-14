@@ -1,8 +1,11 @@
 package com.plcoding.cmpmastermeme.editmeme
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.plcoding.cmpmastermeme.core.domain.MemeExporter
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
@@ -10,9 +13,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getDrawableResourceBytes
+import org.jetbrains.compose.resources.getSystemResourceEnvironment
 
 class EditMemeViewModel(
-
+    private val memeExporter: MemeExporter
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditMemeState())
@@ -21,16 +26,29 @@ class EditMemeViewModel(
     fun onAction(action: EditMemeAction) {
         when(action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
-            EditMemeAction.OnSaveMemeClick -> TODO()
+            is EditMemeAction.OnSaveMemeClick -> saveMeme(action.memeTemplate)
             is EditMemeAction.OnDeleteMemeText -> removeTextBox(action.id)
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
             is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(textBoxId = action.id, text = action.text)
             is EditMemeAction.OnMemeTextPositionChange -> onTextBoxPositionChange(textBoxId = action.id, x = action.x, y = action.y)
+            is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
 
             /* Handled in UI */
             EditMemeAction.OnGoBackClick -> Unit
         }
+    }
+
+    private fun saveMeme(memeTemplate: MemeTemplate) = viewModelScope.launch{
+        val templateBytes = getDrawableResourceBytes(
+            environment = getSystemResourceEnvironment(),
+            resource = memeTemplate.drawableResource
+        )
+        memeExporter.exportMeme(
+            backgroundImageBytes = templateBytes,
+            textBoxes = state.value.memeTexts,
+            canvasSize = state.value.templateSize,
+        )
     }
 
     private fun onTextBoxTextChange(textBoxId: Int, text: String) {
@@ -50,12 +68,16 @@ class EditMemeViewModel(
             it.copy(
                 memeTexts = it.memeTexts.map { textBox ->
                     if (textBox.id == textBoxId) {
-//                        val updated = textBox.copy(offset = Offset(x, y))
-//                        updated
-                        textBox
+                        textBox.copy(offset = Offset(x, y))
                     } else textBox
                 }
             )
+        }
+    }
+    
+    private fun updateTemplateSize(size: IntSize) {
+        _state.update {
+            it.copy(templateSize = size)
         }
     }
 
@@ -88,10 +110,9 @@ class EditMemeViewModel(
     private fun createTextBox() = viewModelScope.launch {
         val currentState = state.value
         val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
-        val position = Offset(
-            x = currentState.templateSize.width / 2f,
-            y = currentState.templateSize.height / 2f + (currentState.memeTexts.size * 40f)
-        )
+        
+        // Place new text at top-left corner
+        val position = Offset(0f, 0f)
 
         val newBox = MemeText(
             id = newId,
