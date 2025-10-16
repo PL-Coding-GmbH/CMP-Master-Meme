@@ -11,4 +11,6 @@
     <string name="choose_template">Choose template</string>
     <string name="choose_template_desc">Choose template for your next meme masterpiece</string>
     <string name="create_first_meme">Choose template for your next meme masterpiece</string>
+    <string name="delete_meme">Delete meme</string>
+    <string name="delete_meme_desc">Permanently delete this meme from your device</string>
 </resources>

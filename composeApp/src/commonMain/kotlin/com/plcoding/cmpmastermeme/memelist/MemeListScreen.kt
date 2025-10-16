@@ -50,6 +50,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -150,12 +151,21 @@ private fun MemeListScreen(
             state.selectedMeme?.let { selectedMeme ->
                 SaveMemeContextSheetRoot(
                     sheetState = actionItemsShareSheet,
-                    onShareClick = {
-                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                            onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
-                            onAction(MemeListAction.OnClearMemeSelection)
-                        }
-                    },
+                    availableActions = listOf(
+                        MemeUiAction.Share(
+                            onClick = {
+                                scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                                    onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
+                                    onAction(MemeListAction.OnClearMemeSelection)
+                                }
+                            }
+                        ),
+                        MemeUiAction.Delete(
+                            onClick = {
+
+                            }
+                        )
+                    ),
                     onDismiss = {
                         scope.launch { actionItemsShareSheet.hide() }.invokeOnCompletion {
                             onAction(MemeListAction.OnClearMemeSelection)

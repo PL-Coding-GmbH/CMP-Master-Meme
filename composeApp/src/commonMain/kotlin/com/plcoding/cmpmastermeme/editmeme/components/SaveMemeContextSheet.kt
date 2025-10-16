@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,12 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import cmpmastermeme.composeapp.generated.resources.Res
-import cmpmastermeme.composeapp.generated.resources.icon_save
-import cmpmastermeme.composeapp.generated.resources.save_to_device
-import cmpmastermeme.composeapp.generated.resources.save_to_device_desc
-import cmpmastermeme.composeapp.generated.resources.share_meme
-import cmpmastermeme.composeapp.generated.resources.share_meme_desc
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.designsystem.button
 import org.jetbrains.compose.resources.stringResource
@@ -36,8 +28,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 fun SaveMemeContextSheetRoot(
     modifier: Modifier = Modifier,
-    onSaveClick: (() -> Unit)? = null,
-    onShareClick: () -> Unit,
+    availableActions: List<MemeUiAction>,
     onDismiss: () -> Unit,
     sheetState: SheetState,
 ) {
@@ -54,81 +45,73 @@ fun SaveMemeContextSheetRoot(
         )
     ) {
         SaveMemeContextContent(
-            onSaveClick,
-            onShareClick
+            availableActions = availableActions
         )
     }
 }
 
 @Composable
 private fun SaveMemeContextContent(
-    onSaveClick: (() -> Unit)? = null,
-    onShareClick: () -> Unit,
+    availableActions: List<MemeUiAction>,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        onSaveClick?.let {
-            ListItem(
-                modifier = Modifier.clickable(onClick = onSaveClick),
-                leadingContent = {
-                    Icon(
-                        imageVector = vectorResource(Res.drawable.icon_save),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                },
-                headlineContent = {
-                    Text(
-                        text = stringResource(Res.string.save_to_device),
-                        style = MaterialTheme.typography.button.copy(
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    )
-                },
-                supportingContent = {
-                    Text(
-                        text = stringResource(Res.string.save_to_device_desc),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.outline
-                        )
-
-                    )
-                },
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
-                )
+        availableActions.forEach { action ->
+            ActionListItem(
+                action = action,
+                onClick = { action.onClick() }
             )
         }
-        ListItem(
-            modifier = Modifier.clickable(onClick = onShareClick),
-            leadingContent = {
-                Icon(
-                    imageVector = Icons.Outlined.Share,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-            },
-            headlineContent = {
-                Text(
-                    text = stringResource(Res.string.share_meme),
-                    style = MaterialTheme.typography.button.copy(
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                )
-            },
-            supportingContent = {
-                Text(
-                    text = stringResource(Res.string.share_meme_desc),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                )
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent
-            )
-        )
     }
+}
+
+@Composable
+private fun ActionListItem(
+    action: MemeUiAction,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tint = when (action) {
+        is MemeUiAction.Delete -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondary
+    }
+    
+    ListItem(
+        modifier = modifier.clickable(onClick = onClick),
+        leadingContent = {
+            when {
+                action.icon != null -> Icon(
+                    imageVector = action.icon,
+                    contentDescription = null,
+                    tint = tint
+                )
+                action.vectorRes != null -> Icon(
+                    imageVector = vectorResource(action.vectorRes),
+                    contentDescription = null,
+                    tint = tint
+                )
+            }
+        },
+        headlineContent = {
+            Text(
+                text = stringResource(action.titleRes),
+                style = MaterialTheme.typography.button.copy(
+                    color = tint
+                )
+            )
+        },
+        supportingContent = {
+            Text(
+                text = stringResource(action.descriptionRes),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.outline
+                )
+            )
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent
+        )
+    )
 }
 
 @Preview
@@ -136,8 +119,11 @@ private fun SaveMemeContextContent(
 private fun Preview() {
     MasterMemeTheme {
         SaveMemeContextContent(
-            onSaveClick = {},
-            onShareClick = {}
+            availableActions = listOf(
+                MemeUiAction.Save(onClick = {}),
+                MemeUiAction.Share(onClick = {}),
+                MemeUiAction.Delete(onClick = {})
+            )
         )
     }
 }

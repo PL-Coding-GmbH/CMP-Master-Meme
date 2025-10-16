@@ -4,7 +4,6 @@ package com.plcoding.cmpmastermeme.editmeme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
@@ -50,6 +48,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
@@ -73,7 +72,7 @@ fun EditMemeScreenRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     ObserveAsEvents(viewModel.events) { event ->
-        when(event) {
+        when (event) {
             EditMemeEvent.SavedMeme -> navigateBack()
         }
     }
@@ -101,8 +100,18 @@ private fun EditMemeScreen(
 
     if (state.isFinalisingMeme) {
         SaveMemeContextSheetRoot(
-            onSaveClick = { onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template)) },
-            onShareClick = { onAction(EditMemeAction.OnShareMemeClick(memeTemplate = template)) },
+            availableActions = listOf(
+                MemeUiAction.Save(
+                    onClick = {
+                        onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template))
+                    }
+                ),
+                MemeUiAction.Share(
+                    onClick = {
+                        onAction(EditMemeAction.OnShareMemeClick(memeTemplate = template))
+                    }
+                )
+            ),
             onDismiss = {
                 onAction(EditMemeAction.OnContinueEditing)
             },
