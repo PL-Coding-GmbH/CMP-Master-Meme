@@ -50,9 +50,9 @@ import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import com.plcoding.cmpmastermeme.core.presentation.asString
-import com.plcoding.cmpmastermeme.editmeme.components.DeleteMemeConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
+import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.DeleteMemeConfirmationDialog
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

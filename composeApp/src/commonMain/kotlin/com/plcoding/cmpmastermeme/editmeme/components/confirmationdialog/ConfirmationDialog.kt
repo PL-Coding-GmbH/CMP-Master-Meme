@@ -1,4 +1,4 @@
-package com.plcoding.cmpmastermeme.editmeme.components
+package com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -6,19 +6,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import cmpmastermeme.composeapp.generated.resources.Res
-import cmpmastermeme.composeapp.generated.resources.cancel
-import cmpmastermeme.composeapp.generated.resources.leave
-import cmpmastermeme.composeapp.generated.resources.leave_editor_message
-import cmpmastermeme.composeapp.generated.resources.leave_editor_title
-import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
-fun LeaveEditorConfirmationDialog(
+fun ConfirmationDialog(
+    config: ConfirmationDialogConfig,
+    onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    onConfirmLeave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AlertDialog(
@@ -26,25 +20,25 @@ fun LeaveEditorConfirmationDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = stringResource(Res.string.leave_editor_title),
+                text = stringResource(config.titleResource),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
             Text(
-                text = stringResource(Res.string.leave_editor_message),
+                text = stringResource(config.messageResource),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirmLeave
+                onClick = onConfirm
             ) {
                 Text(
-                    text = stringResource(Res.string.leave),
-                    color = MaterialTheme.colorScheme.secondary
+                    text = stringResource(config.confirmButtonResource),
+                    color = config.confirmButtonColor ?: MaterialTheme.colorScheme.error
                 )
             }
         },
@@ -53,21 +47,10 @@ fun LeaveEditorConfirmationDialog(
                 onClick = onDismiss
             ) {
                 Text(
-                    text = stringResource(Res.string.cancel),
+                    text = stringResource(config.cancelButtonResource),
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
         }
     )
-}
-
-@Preview
-@Composable
-private fun Preview() {
-    MasterMemeTheme {
-        LeaveEditorConfirmationDialog(
-            onDismiss = {},
-            onConfirmLeave = {}
-        )
-    }
 }
