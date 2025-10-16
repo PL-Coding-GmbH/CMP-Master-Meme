@@ -32,7 +32,7 @@ class MemeListViewModel(
     fun onAction(action: MemeListAction) {
         when (action) {
             MemeListAction.OnCreateNewMeme -> showTemplatePicker()
-            MemeListAction.OnCancelNewMemeCreation -> hideTemplatePicker()
+            MemeListAction.OnStopPickTemplate -> hideTemplatePicker()
 
             /* Handled in UI */
             is MemeListAction.OnTemplateSelected -> Unit

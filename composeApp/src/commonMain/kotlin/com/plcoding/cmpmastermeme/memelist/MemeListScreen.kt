@@ -31,6 +31,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +50,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -60,6 +62,7 @@ fun MemeListScreenRoot(
     viewModel: MemeListViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
     MemeListScreen(
         state = state,
         onAction = { action ->
@@ -68,7 +71,7 @@ fun MemeListScreenRoot(
                 else -> Unit
             }
             viewModel.onAction(action)
-        }
+        },
     )
 }
 
@@ -77,6 +80,8 @@ private fun MemeListScreen(
     state: MemeListState,
     onAction: (MemeListAction) -> Unit
 ) {
+
+    val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
@@ -122,8 +127,17 @@ private fun MemeListScreen(
             if (state.isCreatingNewMeme) {
                 TemplateListSheetRoot(
                     sheetState = sheetState,
-                    onMemeTemplateSelected = { onAction(MemeListAction.OnTemplateSelected(it)) },
-                    onDismiss = { onAction(MemeListAction.OnCancelNewMemeCreation) },
+                    onMemeTemplateSelected = { template ->
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            onAction(MemeListAction.OnTemplateSelected(template))
+                            onAction(MemeListAction.OnStopPickTemplate)
+                        }
+                    },
+                    onDismiss = {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            onAction(MemeListAction.OnStopPickTemplate)
+                        }
+                    },
                     memeTemplates = state.templates
                 )
             }
