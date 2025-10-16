@@ -6,5 +6,6 @@ data class MemeListState(
     val memes: List<MemeUi> = emptyList(),
     val templates: List<MemeTemplate> = MemeTemplate.entries,
     val isCreatingNewMeme: Boolean = false,
-    val selectedMeme: MemeUi? = null
+    val selectedMeme: MemeUi? = null,
+    val memeBeingDeleted: MemeUi? = null
 )

@@ -39,10 +39,24 @@ class MemeListViewModel(
             MemeListAction.OnClearMemeSelection -> setSelectedMeme(meme = null)
             is MemeListAction.OnSelectMeme -> setSelectedMeme(meme = action.meme)
             is MemeListAction.OnShareMemeClick -> shareMeme(action.uri)
+            is MemeListAction.OnDeleteMemeClick -> showDeleteMemeConfirmation(meme = action.meme)
+            MemeListAction.CancelMemeDeletion -> cancelMemeDeletionAndSelection()
+            is MemeListAction.OnConfirmDeleteMeme -> delete(meme = action.meme)
 
             /* Handled in UI */
             is MemeListAction.OnTemplateSelected -> Unit
         }
+    }
+
+    private fun delete(meme: MemeUi) = viewModelScope.launch {
+        memeDataSource.delete(meme.id)
+        _state.update {
+            it.copy(
+                memeBeingDeleted = null,
+                selectedMeme = null
+            )
+        }
+        // todo show confirmation toast
     }
 
     private fun observeAllMemes() {
@@ -53,6 +67,21 @@ class MemeListViewModel(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun cancelMemeDeletionAndSelection() {
+        _state.update {
+            it.copy(
+                selectedMeme = null,
+                memeBeingDeleted = null
+            )
+        }
+    }
+
+    private fun showDeleteMemeConfirmation(meme: MemeUi) {
+        _state.update {
+            it.copy(memeBeingDeleted = meme)
+        }
     }
 
     private fun shareMeme(uri: String) = viewModelScope.launch {

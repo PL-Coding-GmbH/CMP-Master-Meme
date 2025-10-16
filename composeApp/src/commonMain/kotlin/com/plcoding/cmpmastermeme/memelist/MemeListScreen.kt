@@ -50,6 +50,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.DeleteMemeConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import kotlinx.coroutines.launch
@@ -129,50 +130,57 @@ private fun MemeListScreen(
                     onMemeClick = { onAction(MemeListAction.OnSelectMeme(it)) }
                 )
             }
+        }
 
-            if (state.isCreatingNewMeme) {
-                TemplateListSheetRoot(
-                    sheetState = templateShareSheet,
-                    onMemeTemplateSelected = { template ->
-                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                            onAction(MemeListAction.OnTemplateSelected(template))
-                            onAction(MemeListAction.OnHideTemplateOptions)
-                        }
-                    },
-                    onDismiss = {
-                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                            onAction(MemeListAction.OnHideTemplateOptions)
-                        }
-                    },
-                    memeTemplates = state.templates
-                )
-            }
+        // Conditional UI
 
-            state.selectedMeme?.let { selectedMeme ->
-                SaveMemeContextSheetRoot(
-                    sheetState = actionItemsShareSheet,
-                    availableActions = listOf(
-                        MemeUiAction.Share(
-                            onClick = {
-                                scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                                    onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
-                                    onAction(MemeListAction.OnClearMemeSelection)
-                                }
+        state.memeBeingDeleted?.let {
+            DeleteMemeConfirmationDialog(
+                onDismiss = { onAction(MemeListAction.CancelMemeDeletion) },
+                onConfirmDelete = { onAction(MemeListAction.OnConfirmDeleteMeme(it)) }
+            )
+        }
+
+        if (state.isCreatingNewMeme) {
+            TemplateListSheetRoot(
+                sheetState = templateShareSheet,
+                onMemeTemplateSelected = { template ->
+                    scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                        onAction(MemeListAction.OnTemplateSelected(template))
+                        onAction(MemeListAction.OnHideTemplateOptions)
+                    }
+                },
+                onDismiss = {
+                    scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                        onAction(MemeListAction.OnHideTemplateOptions)
+                    }
+                },
+                memeTemplates = state.templates
+            )
+        }
+
+        state.selectedMeme?.let { selectedMeme ->
+            SaveMemeContextSheetRoot(
+                sheetState = actionItemsShareSheet,
+                availableActions = listOf(
+                    MemeUiAction.Share(
+                        onClick = {
+                            scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                                onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
+                                onAction(MemeListAction.OnClearMemeSelection)
                             }
-                        ),
-                        MemeUiAction.Delete(
-                            onClick = {
-
-                            }
-                        )
+                        }
                     ),
-                    onDismiss = {
-                        scope.launch { actionItemsShareSheet.hide() }.invokeOnCompletion {
-                            onAction(MemeListAction.OnClearMemeSelection)
-                        }
-                    },
-                )
-            }
+                    MemeUiAction.Delete(
+                        onClick = { onAction(MemeListAction.OnDeleteMemeClick(selectedMeme)) }
+                    )
+                ),
+                onDismiss = {
+                    scope.launch { actionItemsShareSheet.hide() }.invokeOnCompletion {
+                        onAction(MemeListAction.OnClearMemeSelection)
+                    }
+                },
+            )
         }
     }
 }
