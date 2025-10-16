@@ -35,11 +35,11 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun SaveMemeContextSheetRoot(
-    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onSaveClick: (() -> Unit)? = null,
     onShareClick: () -> Unit,
     onDismiss: () -> Unit,
     sheetState: SheetState,
-    modifier: Modifier = Modifier
 ) {
     ModalBottomSheet(
         modifier = modifier,
@@ -62,41 +62,43 @@ fun SaveMemeContextSheetRoot(
 
 @Composable
 private fun SaveMemeContextContent(
-    onSaveClick: () -> Unit,
+    onSaveClick: (() -> Unit)? = null,
     onShareClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        ListItem(
-            modifier = Modifier.clickable(onClick = onSaveClick),
-            leadingContent = {
-                Icon(
-                    imageVector = vectorResource(Res.drawable.icon_save),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-            },
-            headlineContent = {
-                Text(
-                    text = stringResource(Res.string.save_to_device),
-                    style = MaterialTheme.typography.button.copy(
-                        color = MaterialTheme.colorScheme.secondary
+        onSaveClick?.let {
+            ListItem(
+                modifier = Modifier.clickable(onClick = onSaveClick),
+                leadingContent = {
+                    Icon(
+                        imageVector = vectorResource(Res.drawable.icon_save),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary
                     )
-                )
-            },
-            supportingContent = {
-                Text(
-                    text = stringResource(Res.string.save_to_device_desc),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.outline
+                },
+                headlineContent = {
+                    Text(
+                        text = stringResource(Res.string.save_to_device),
+                        style = MaterialTheme.typography.button.copy(
+                            color = MaterialTheme.colorScheme.secondary
+                        )
                     )
+                },
+                supportingContent = {
+                    Text(
+                        text = stringResource(Res.string.save_to_device_desc),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.outline
+                        )
 
+                    )
+                },
+                colors = ListItemDefaults.colors(
+                    containerColor = Color.Transparent
                 )
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent
             )
-        )
+        }
         ListItem(
             modifier = Modifier.clickable(onClick = onShareClick),
             leadingContent = {

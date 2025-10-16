@@ -50,6 +50,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -82,7 +83,8 @@ private fun MemeListScreen(
 ) {
 
     val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val templateShareSheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val actionItemsShareSheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
         topBar = {
@@ -121,24 +123,44 @@ private fun MemeListScreen(
 
             when {
                 state.memes.isEmpty() -> CreateFirstMemeNotice()
-                else -> ListOfMemes(state.memes)
+                else -> ListOfMemes(
+                    memes = state.memes,
+                    onMemeClick = { onAction(MemeListAction.OnSelectMeme(it)) }
+                )
             }
 
             if (state.isCreatingNewMeme) {
                 TemplateListSheetRoot(
-                    sheetState = sheetState,
+                    sheetState = templateShareSheet,
                     onMemeTemplateSelected = { template ->
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
                             onAction(MemeListAction.OnTemplateSelected(template))
-                            onAction(MemeListAction.OnStopPickTemplate)
+                            onAction(MemeListAction.OnHideTemplateOptions)
                         }
                     },
                     onDismiss = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            onAction(MemeListAction.OnStopPickTemplate)
+                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                            onAction(MemeListAction.OnHideTemplateOptions)
                         }
                     },
                     memeTemplates = state.templates
+                )
+            }
+
+            state.selectedMeme?.let { selectedMeme ->
+                SaveMemeContextSheetRoot(
+                    sheetState = actionItemsShareSheet,
+                    onShareClick = {
+                        scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
+                            onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
+                            onAction(MemeListAction.OnClearMemeSelection)
+                        }
+                    },
+                    onDismiss = {
+                        scope.launch { actionItemsShareSheet.hide() }.invokeOnCompletion {
+                            onAction(MemeListAction.OnClearMemeSelection)
+                        }
+                    },
                 )
             }
         }
@@ -166,7 +188,8 @@ private fun CreateFirstMemeNotice() {
 
 @Composable
 private fun ListOfMemes(
-    memes: List<MemeUi>
+    memes: List<MemeUi>,
+    onMemeClick: (MemeUi) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -189,7 +212,7 @@ private fun ListOfMemes(
             ) { meme ->
                 Card(
                     modifier = Modifier.aspectRatio(1f),
-                    onClick = { },
+                    onClick = { onMemeClick(meme) },
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     AsyncImage(

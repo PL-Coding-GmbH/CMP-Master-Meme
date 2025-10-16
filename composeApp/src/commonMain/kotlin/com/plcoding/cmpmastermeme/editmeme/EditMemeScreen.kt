@@ -165,7 +165,6 @@ private fun DraggableContainer(
 ) {
     BoxWithConstraints(
         modifier = modifier
-            .border(4.dp, Color.Gray)
     ) {
         val parentWidth = constraints.maxWidth
         val parentHeight = constraints.maxHeight

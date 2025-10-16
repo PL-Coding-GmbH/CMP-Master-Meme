@@ -3,6 +3,7 @@ package com.plcoding.cmpmastermeme.memelist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
+import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
@@ -10,9 +11,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class MemeListViewModel(
-    private val memeDataSource: MemeDataSource
+    private val memeDataSource: MemeDataSource,
+    private val sendableFileManager: SendableFileManager,
 ) : ViewModel() {
 
     private var hasInitialized = false
@@ -31,8 +34,11 @@ class MemeListViewModel(
 
     fun onAction(action: MemeListAction) {
         when (action) {
-            MemeListAction.OnCreateNewMeme -> showTemplatePicker()
-            MemeListAction.OnStopPickTemplate -> hideTemplatePicker()
+            MemeListAction.OnCreateNewMeme -> toggleTemplatePicker(isVisible = true)
+            MemeListAction.OnHideTemplateOptions -> toggleTemplatePicker(isVisible = false)
+            MemeListAction.OnClearMemeSelection -> setSelectedMeme(meme = null)
+            is MemeListAction.OnSelectMeme -> setSelectedMeme(meme = action.meme)
+            is MemeListAction.OnShareMemeClick -> shareMeme(action.uri)
 
             /* Handled in UI */
             is MemeListAction.OnTemplateSelected -> Unit
@@ -49,15 +55,19 @@ class MemeListViewModel(
             .launchIn(viewModelScope)
     }
 
-    private fun hideTemplatePicker() {
+    private fun shareMeme(uri: String) = viewModelScope.launch {
+        sendableFileManager.shareFile(filePath = uri)
+    }
+
+    private fun toggleTemplatePicker(isVisible: Boolean) {
         _state.update {
-            it.copy(isCreatingNewMeme = false)
+            it.copy(isCreatingNewMeme = isVisible)
         }
     }
 
-    private fun showTemplatePicker() {
+    private fun setSelectedMeme(meme: MemeUi?) {
         _state.update {
-            it.copy(isCreatingNewMeme = true)
+            it.copy(selectedMeme = meme)
         }
     }
 }
