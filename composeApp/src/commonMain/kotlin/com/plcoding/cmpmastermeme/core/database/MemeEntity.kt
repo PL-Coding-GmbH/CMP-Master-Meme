@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 @Entity(tableName = "tbl_meme")
 data class MemeEntity(
     @PrimaryKey(autoGenerate = false)
-    val id: Uuid,
+    val id: Uuid = Uuid.random(),
     val imageUri: String,
     val createdAt: Long
 )

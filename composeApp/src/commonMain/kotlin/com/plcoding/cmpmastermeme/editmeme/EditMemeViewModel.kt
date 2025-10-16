@@ -4,6 +4,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.plcoding.cmpmastermeme.core.domain.Meme
+import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
@@ -12,7 +14,6 @@ import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,7 +28,8 @@ import org.koin.core.qualifier.named
 
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
-    private val sendableFileManager: SendableFileManager
+    private val sendableFileManager: SendableFileManager,
+    private val memeDataSource: MemeDataSource
 ) : ViewModel(), KoinComponent {
 
     private val _state = MutableStateFlow(EditMemeState())
@@ -74,6 +76,9 @@ class EditMemeViewModel(
             .onSuccess {
                 sendableFileManager.shareFile(it)
             }
+            .onFailure {
+                // TODO show failure toast
+            }
     }
 
     private fun toggleIsFinalisingMeme(isFinalising: Boolean) {
@@ -93,6 +98,12 @@ class EditMemeViewModel(
             canvasSize = state.value.templateSize,
             saveStrategy = get(named("private_dir"))
         )
+            .onSuccess { uri ->
+                memeDataSource.save(Meme(imageUri = uri))
+            }
+            .onFailure {
+                // TODO show toast
+            }
     }
 
     /*

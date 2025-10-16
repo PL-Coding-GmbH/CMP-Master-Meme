@@ -2,10 +2,10 @@ package com.plcoding.cmpmastermeme.di
 
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.plcoding.cmpmastermeme.SharedApplicationScope
-import com.plcoding.cmpmastermeme.core.data.RoomLocalMemeDataSource
+import com.plcoding.cmpmastermeme.core.data.LocalMemeDataSource
 import com.plcoding.cmpmastermeme.core.database.DatabaseFactory
 import com.plcoding.cmpmastermeme.core.database.MasterMemeDatabase
-import com.plcoding.cmpmastermeme.core.domain.LocalMemeDataSource
+import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.editmeme.EditMemeViewModel
 import com.plcoding.cmpmastermeme.memelist.MemeListViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +23,7 @@ object KoinModules {
     }
 
     private val coreDataModule = module {
-        factoryOf(::RoomLocalMemeDataSource).bind<LocalMemeDataSource>()
+        factoryOf(::LocalMemeDataSource).bind<MemeDataSource>()
     }
 
     private val databaseModule = module {

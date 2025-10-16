@@ -1,15 +1,15 @@
 package com.plcoding.cmpmastermeme.core.data
 
 import com.plcoding.cmpmastermeme.core.database.MasterMemeDatabase
-import com.plcoding.cmpmastermeme.core.domain.LocalMemeDataSource
+import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.Meme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.Uuid
 
-class RoomLocalMemeDataSource(
+class LocalMemeDataSource(
     db: MasterMemeDatabase
-) : LocalMemeDataSource {
+) : MemeDataSource {
 
     private val dao by lazy { db.memeDao() }
 

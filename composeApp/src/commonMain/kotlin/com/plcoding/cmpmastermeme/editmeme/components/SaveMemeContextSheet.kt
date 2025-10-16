@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.plcoding.cmpmastermeme.editmeme
+package com.plcoding.cmpmastermeme.editmeme.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
