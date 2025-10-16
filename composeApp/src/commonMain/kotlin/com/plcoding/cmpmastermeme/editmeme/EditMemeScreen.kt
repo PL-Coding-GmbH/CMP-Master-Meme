@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -46,13 +47,12 @@ import cmpmastermeme.composeapp.generated.resources.save_meme
 import cmpmastermeme.composeapp.generated.resources.title_new_meme
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
-import com.plcoding.cmpmastermeme.core.presentation.BackHandler
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
-import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
+import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.LeaveEditorConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction

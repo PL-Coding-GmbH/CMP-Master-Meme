@@ -25,12 +25,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
+import cmpmastermeme.composeapp.generated.resources.delete_meme_success
 import cmpmastermeme.composeapp.generated.resources.empty_meme
 import cmpmastermeme.composeapp.generated.resources.meme_empty_list
 import cmpmastermeme.composeapp.generated.resources.title_your_memes
@@ -49,11 +53,13 @@ import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.designsystem.extended
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
+import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.DeleteMemeConfirmationDialog
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -65,9 +71,20 @@ fun MemeListScreenRoot(
     viewModel: MemeListViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when(event) {
+            MemeListEvent.MemeDeleted -> scope.launch {
+                snackbarHostState.showSnackbar(message = getString(Res.string.delete_meme_success))
+            }
+        }
+    }
 
     MemeListScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         onAction = { action ->
             when (action) {
                 is MemeListAction.OnTemplateSelected -> onNavigateToEditTemplateSelected(action.template)
@@ -81,6 +98,7 @@ fun MemeListScreenRoot(
 @Composable
 private fun MemeListScreen(
     state: MemeListState,
+    snackbarHostState: SnackbarHostState,
     onAction: (MemeListAction) -> Unit
 ) {
 
@@ -89,6 +107,7 @@ private fun MemeListScreen(
     val actionItemsShareSheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -272,6 +291,7 @@ private fun Preview() {
     MasterMemeTheme {
         MemeListScreen(
             state = MemeListState(),
+            snackbarHostState = remember { SnackbarHostState() },
             onAction = {}
         )
     }

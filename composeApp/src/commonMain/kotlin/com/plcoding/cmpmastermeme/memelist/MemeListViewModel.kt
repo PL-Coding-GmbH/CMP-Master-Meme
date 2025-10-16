@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,6 +21,9 @@ class MemeListViewModel(
 ) : ViewModel() {
 
     private var hasInitialized = false
+
+    private val eventChannel = Channel<MemeListEvent>()
+    val events = eventChannel.receiveAsFlow()
 
     private val _state = MutableStateFlow(MemeListState())
     val state = _state
@@ -56,7 +61,7 @@ class MemeListViewModel(
                 selectedMeme = null
             )
         }
-        // todo show confirmation toast
+        eventChannel.send(MemeListEvent.MemeDeleted)
     }
 
     private fun observeAllMemes() {

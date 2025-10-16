@@ -19,4 +19,5 @@
     <string name="leave">Leave</string>
     <string name="delete_meme_title">Delete meme?</string>
     <string name="delete_meme_message">Are you sure you want to delete this precious meme?</string>
+    <string name="delete_meme_success">Meme successfully deleted!</string>
 </resources>
