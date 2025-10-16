@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -47,12 +48,14 @@ import cmpmastermeme.composeapp.generated.resources.save_meme
 import cmpmastermeme.composeapp.generated.resources.title_new_meme
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import org.jetbrains.compose.resources.imageResource
@@ -63,18 +66,24 @@ import kotlin.math.roundToInt
 @Composable
 fun EditMemeScreenRoot(
     template: MemeTemplate,
-    onGoBackClick: () -> Unit,
+    navigateBack: () -> Unit,
     viewModel: EditMemeViewModel = koinViewModel()
 ) {
 
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when(event) {
+            EditMemeEvent.SavedMeme -> navigateBack()
+        }
+    }
 
     EditMemeScreen(
         template = template,
         state = state,
         onAction = { action ->
             when (action) {
-                EditMemeAction.OnGoBackClick -> onGoBackClick()
+                EditMemeAction.OnGoBackClick -> navigateBack()
                 else -> Unit
             }
             viewModel.onAction(action)
@@ -160,8 +169,6 @@ private fun DraggableContainer(
     ) {
         val parentWidth = constraints.maxWidth
         val parentHeight = constraints.maxHeight
-        println("kai parent width and height $parentWidth x $parentHeight")
-
 
         children.forEach { child ->
             var offsetX by remember(child.id) { mutableStateOf(child.offset.x) }
@@ -295,6 +302,7 @@ private fun Preview() {
                     MemeText(
                         id = 0,
                         text = "Text #1",
+                        offset = Offset(100f, 200f)
                     ),
                     MemeText(
                         id = 1,

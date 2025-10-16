@@ -10,12 +10,15 @@ import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +37,9 @@ class EditMemeViewModel(
 
     private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
+
+    private val eventChannel = Channel<EditMemeEvent>()
+    val events = eventChannel.consumeAsFlow()
 
     fun onAction(action: EditMemeAction) {
         when (action) {
@@ -100,6 +106,7 @@ class EditMemeViewModel(
         )
             .onSuccess { uri ->
                 memeDataSource.save(Meme(imageUri = uri))
+                eventChannel.send(EditMemeEvent.SavedMeme)
             }
             .onFailure {
                 // TODO show toast

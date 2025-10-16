@@ -46,7 +46,7 @@ fun NavigationRoot(
             template?.let {
                 EditMemeScreenRoot(
                     template = it,
-                    onGoBackClick = {
+                    navigateBack = {
                         navController.navigateUp()
                     }
                 )
