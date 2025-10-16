@@ -5,12 +5,12 @@ package com.plcoding.cmpmastermeme.memelist
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -33,6 +33,7 @@ import cmpmastermeme.composeapp.generated.resources.choose_template
 import cmpmastermeme.composeapp.generated.resources.choose_template_desc
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.BottomGradient
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -49,7 +50,8 @@ fun TemplateListSheetRoot(
         modifier = modifier,
         onDismissRequest = { onDismiss() },
         sheetState = sheetState,
-        contentWindowInsets = { WindowInsets.navigationBars },
+        // we want the list to go behind the system navigation bar
+        contentWindowInsets = { WindowInsets() },
         dragHandle = {
             BottomSheetDefaults.DragHandle()
         },
@@ -74,7 +76,7 @@ private fun MemeTemplateListContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
     ) {
         Text(
             text = stringResource(Res.string.choose_template),
@@ -87,29 +89,32 @@ private fun MemeTemplateListContent(
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            itemsIndexed(
-                items = memeTemplates,
-                key = { index, template -> template.id }
-            ) { index, template ->
-                Card(
-                    modifier = modifier.aspectRatio(1f),
-                    onClick = { onMemeTemplateSelected(template) },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Image(
-                        painter = painterResource(template.drawableResource),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+        Box {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                itemsIndexed(
+                    items = memeTemplates,
+                    key = { index, template -> template.id }
+                ) { index, template ->
+                    Card(
+                        modifier = modifier.aspectRatio(1f),
+                        onClick = { onMemeTemplateSelected(template) },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(template.drawableResource),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
+            BottomGradient()
         }
     }
 }
