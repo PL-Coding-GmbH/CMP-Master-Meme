@@ -16,9 +16,10 @@ import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +40,7 @@ class EditMemeViewModel(
     val state = _state.asStateFlow()
 
     private val eventChannel = Channel<EditMemeEvent>()
-    val events = eventChannel.consumeAsFlow()
+    val events = eventChannel.receiveAsFlow()
 
     fun onAction(action: EditMemeAction) {
         when (action) {
@@ -63,9 +64,30 @@ class EditMemeViewModel(
             EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
             EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
             is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
+            EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
+            EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
+            EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
+        }
+    }
 
-            /* Handled in UI */
-            EditMemeAction.OnGoBackClick -> Unit
+    private fun showLeaveConfirmationIfEdited() = viewModelScope.launch {
+        if (state.value.memeTexts.isEmpty()) {
+            eventChannel.send(EditMemeEvent.ConfirmedLeaveWithoutSaving)
+        } else toggleLeaveEditorConfirmation(show = true)
+    }
+
+    private fun leaveWithoutSaving() = viewModelScope.launch {
+        _state.update {
+            it.copy(isLeavingWithoutSaving = false)
+        }
+        // simplest way to first let the dialog hide and then trigger navigation
+        delay(100)
+        eventChannel.send(EditMemeEvent.ConfirmedLeaveWithoutSaving)
+    }
+
+    private fun toggleLeaveEditorConfirmation(show: Boolean) {
+        _state.update {
+            it.copy(isLeavingWithoutSaving = show)
         }
     }
 

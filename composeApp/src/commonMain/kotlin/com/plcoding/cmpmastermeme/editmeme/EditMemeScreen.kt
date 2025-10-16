@@ -46,6 +46,7 @@ import cmpmastermeme.composeapp.generated.resources.save_meme
 import cmpmastermeme.composeapp.generated.resources.title_new_meme
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.BackHandler
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
@@ -53,6 +54,7 @@ import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
+import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.LeaveEditorConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
@@ -73,20 +75,15 @@ fun EditMemeScreenRoot(
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            EditMemeEvent.SavedMeme -> navigateBack()
+            EditMemeEvent.SavedMeme,
+            EditMemeEvent.ConfirmedLeaveWithoutSaving -> navigateBack()
         }
     }
 
     EditMemeScreen(
         template = template,
         state = state,
-        onAction = { action ->
-            when (action) {
-                EditMemeAction.OnGoBackClick -> navigateBack()
-                else -> Unit
-            }
-            viewModel.onAction(action)
-        }
+        onAction = viewModel::onAction
     )
 }
 
@@ -98,26 +95,10 @@ private fun EditMemeScreen(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    if (state.isFinalisingMeme) {
-        SaveMemeContextSheetRoot(
-            availableActions = listOf(
-                MemeUiAction.Save(
-                    onClick = {
-                        onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template))
-                    }
-                ),
-                MemeUiAction.Share(
-                    onClick = {
-                        onAction(EditMemeAction.OnShareMemeClick(memeTemplate = template))
-                    }
-                )
-            ),
-            onDismiss = {
-                onAction(EditMemeAction.OnContinueEditing)
-            },
-            sheetState = sheetState,
-        )
-    }
+    BackHandler(
+        enabled = !state.isLeavingWithoutSaving && !state.isFinalisingMeme,
+        onBack = { onAction(EditMemeAction.OnGoBackClick) }
+    )
 
     Scaffold(
         topBar = {
@@ -161,6 +142,35 @@ private fun EditMemeScreen(
                 )
             }
         }
+    }
+
+    // Conditional UI
+    if (state.isFinalisingMeme) {
+        SaveMemeContextSheetRoot(
+            availableActions = listOf(
+                MemeUiAction.Save(
+                    onClick = {
+                        onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template))
+                    }
+                ),
+                MemeUiAction.Share(
+                    onClick = {
+                        onAction(EditMemeAction.OnShareMemeClick(memeTemplate = template))
+                    }
+                )
+            ),
+            onDismiss = {
+                onAction(EditMemeAction.OnContinueEditing)
+            },
+            sheetState = sheetState,
+        )
+    }
+
+    if (state.isLeavingWithoutSaving) {
+        LeaveEditorConfirmationDialog(
+            onDismiss = { onAction(EditMemeAction.OnCancelLeaveWithoutSaving) },
+            onConfirmLeave = { onAction(EditMemeAction.OnConfirmLeaveWithoutSaving) }
+        )
     }
 }
 
