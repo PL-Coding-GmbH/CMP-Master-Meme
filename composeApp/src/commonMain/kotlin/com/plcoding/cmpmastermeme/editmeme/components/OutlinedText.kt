@@ -16,6 +16,8 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.plcoding.cmpmastermeme.core.designsystem.Impact
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
@@ -30,9 +32,12 @@ fun OutlinedText(
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
     strokeWidth: Float = 8f,
-    textAlign: TextAlign = TextAlign.Center
+    textAlign: TextAlign = TextAlign.Center,
+    maxWidth: Dp? = null,
+    maxHeight: Dp? = null
 ) {
     val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
 
     val textStyle = TextStyle(
         fontSize = fontSize.sp,
@@ -40,12 +45,31 @@ fun OutlinedText(
         textAlign = textAlign
     )
 
+    val constraints = when {
+        maxWidth != null && maxHeight != null -> with(density) {
+            Constraints(
+                maxWidth = maxWidth.roundToPx(),
+                maxHeight = maxHeight.roundToPx()
+            )
+        }
+        maxWidth != null -> with(density) {
+            Constraints(
+                maxWidth = maxWidth.roundToPx()
+            )
+        }
+        maxHeight != null -> with(density) {
+            Constraints(
+                maxHeight = maxHeight.roundToPx()
+            )
+        }
+        else -> null
+    }
+
     val textLayoutResult = textMeasurer.measure(
         text = AnnotatedString(text),
-        style = textStyle
+        style = textStyle,
+        constraints = constraints ?: Constraints()
     )
-
-    val density = LocalDensity.current
 
     Canvas(
         modifier = modifier.background(Color.Transparent)

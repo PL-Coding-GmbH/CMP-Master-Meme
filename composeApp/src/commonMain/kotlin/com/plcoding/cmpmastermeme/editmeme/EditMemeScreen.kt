@@ -274,7 +274,9 @@ private fun DraggableContainer(
                         && textBoxInteractionState.textBoxId == child.id
                 MemeTextBox(
                     memeText = child,
-                    modifier = Modifier.widthIn(max = (parentWidth * 0.5f).dp),
+                    modifier = Modifier,
+                    maxWidth = (parentWidth * 0.3f).dp,
+                    maxHeight = (parentHeight * 0.3f).dp,
                     isSelected = isSelected,
                     isEditing = isEditing,
                     onTextInputChange = {
@@ -373,9 +375,9 @@ private fun BottomBar(
                 )
             }
             FontSlider(
-                value = targetedMemeText.fontSize / MAX_TEXT_FONT_SIZE,
-                onValueChange = { newScale ->
-                    onFontValueChange(targetedMemeText.id, MAX_TEXT_FONT_SIZE * newScale)
+                value = targetedMemeText.fontSize,
+                onValueChange = { newFontSize ->
+                    onFontValueChange(targetedMemeText.id, newFontSize)
                 },
                 modifier = Modifier.weight(1f)
             )

@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
+import com.plcoding.cmpmastermeme.editmeme.MAX_TEXT_FONT_SIZE
+import com.plcoding.cmpmastermeme.editmeme.MIN_TEXT_FONT_SIZE
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -33,6 +35,8 @@ fun FontSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    minFontSize: Float = MIN_TEXT_FONT_SIZE,
+    maxFontSize: Float = MAX_TEXT_FONT_SIZE,
     sliderColor: Color = MaterialTheme.colorScheme.secondary
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -68,7 +72,7 @@ fun FontSlider(
             onValueChange = onValueChange,
             modifier = Modifier.weight(1f),
             enabled = enabled,
-            valueRange = 0f..1f,
+            valueRange = minFontSize..maxFontSize,
             interactionSource = interactionSource,
             thumb = {
                 Canvas(
@@ -112,7 +116,7 @@ private fun Preview() {
         Box(
             Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
-            var value by remember { mutableFloatStateOf(0.8f) }
+            var value by remember { mutableFloatStateOf(36f) }
             FontSlider(
                 value = value,
                 onValueChange = { value = it },

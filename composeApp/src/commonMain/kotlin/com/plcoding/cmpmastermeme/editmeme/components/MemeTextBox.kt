@@ -4,22 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.Impact
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
@@ -62,7 +57,9 @@ fun MemeTextBox(
     onDoubleClick: () -> Unit,
     onTextInputChange: (String) -> Unit,
     onDelete: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    maxWidth: Dp,
+    maxHeight: Dp
 ) {
     val editableMemeText = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -84,6 +81,7 @@ fun MemeTextBox(
 
     Box(
         modifier = modifier
+            .sizeIn(maxWidth = maxWidth, maxHeight = maxHeight)
             .border(
                 width = 2.dp,
                 color = if (isSelected || isEditing) Color.White else Color.Transparent,
@@ -102,21 +100,28 @@ fun MemeTextBox(
                 )
             }
     ) {
+        val textPadding = 8.dp
         if (isEditing) {
             OutlinedTextField(
                 text = memeText.text,
                 fontSize = memeText.fontSize,
                 fontFamily = Impact,
                 onTextChange = onTextInputChange,
+                // Accounting here for padding
+                maxWidth = maxWidth - (textPadding * 2),
+                maxHeight = maxHeight - (textPadding * 2),
                 modifier = Modifier
                     .focusRequester(editableMemeText)
-                    .padding(8.dp)
+                    .padding(textPadding)
             )
         } else {
             OutlinedText(
                 text = memeText.text,
                 fontSize = memeText.fontSize,
-                modifier = Modifier.padding(8.dp)
+                // Accounting here for padding
+                maxWidth = maxWidth - (textPadding * 2),
+                maxHeight = maxHeight - (textPadding * 2),
+                modifier = Modifier.padding(textPadding)
             )
         }
         if (isSelected || isEditing) {
@@ -179,7 +184,9 @@ private fun Preview() {
                     isEditing = false
                 },
                 onClick = { isSelected = true; isEditing = false },
-                onDoubleClick = { isEditing = true; isSelected = false }
+                onDoubleClick = { isEditing = true; isSelected = false },
+                maxWidth = 250.dp,
+                maxHeight = 250.dp
             )
         }
     }

@@ -31,6 +31,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.qualifier.named
 
+const val MIN_TEXT_FONT_SIZE = 12f
 const val MAX_TEXT_FONT_SIZE = 72f
 
 class EditMemeViewModel(

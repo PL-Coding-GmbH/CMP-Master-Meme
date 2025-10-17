@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +63,9 @@ fun OutlinedTextField(
     strokeWidth: Float = 8f,
     textAlign: TextAlign = TextAlign.Center,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    maxWidth: Dp? = null,
+    maxHeight: Dp? = null
 ) {
     var textFieldValue by remember {
         mutableStateOf(
@@ -78,9 +82,30 @@ fun OutlinedTextField(
         textAlign = textAlign
     )
     
+    val constraints = when {
+        maxWidth != null && maxHeight != null -> with(density) {
+            Constraints(
+                maxWidth = maxWidth.roundToPx(),
+                maxHeight = maxHeight.roundToPx()
+            )
+        }
+        maxWidth != null -> with(density) {
+            Constraints(
+                maxWidth = maxWidth.roundToPx()
+            )
+        }
+        maxHeight != null -> with(density) {
+            Constraints(
+                maxHeight = maxHeight.roundToPx()
+            )
+        }
+        else -> null
+    }
+    
     val textLayoutResult = textMeasurer.measure(
         text = AnnotatedString(textFieldValue.text.ifEmpty { " " }), // Ensure minimum size
-        style = textStyle
+        style = textStyle,
+        constraints = constraints ?: Constraints()
     )
 
     val textSize = with(density) {
@@ -98,8 +123,12 @@ fun OutlinedTextField(
         },
         textStyle = textStyle.copy(color = Color.Transparent),
         cursorBrush = SolidColor(Color.White),
-        keyboardOptions = keyboardOptions,
+        keyboardOptions = keyboardOptions.copy(
+            capitalization = KeyboardCapitalization.Characters,
+            imeAction = ImeAction.Done
+        ),
         keyboardActions = keyboardActions,
+        singleLine = false,
         modifier = modifier.size(textSize)
     )
     { innerTextField ->
@@ -111,7 +140,9 @@ fun OutlinedTextField(
                 fillColor = fillColor,
                 strokeColor = strokeColor,
                 strokeWidth = strokeWidth,
-                textAlign = textAlign
+                textAlign = textAlign,
+                maxWidth = maxWidth,
+                maxHeight = maxHeight
             )
             // Invisible text field for cursor
             innerTextField()
