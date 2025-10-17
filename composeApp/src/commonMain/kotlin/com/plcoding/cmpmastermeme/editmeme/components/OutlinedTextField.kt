@@ -61,10 +61,7 @@ fun OutlinedTextField(
     strokeWidth: Float = 8f,
     textAlign: TextAlign = TextAlign.Center,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    keyboardOptions: KeyboardOptions = KeyboardOptions(
-        imeAction = ImeAction.Done,
-        capitalization = KeyboardCapitalization.Sentences
-    )
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     var textFieldValue by remember {
         mutableStateOf(
@@ -103,7 +100,6 @@ fun OutlinedTextField(
         cursorBrush = SolidColor(Color.White),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        singleLine = false,
         modifier = modifier.size(textSize)
     )
     { innerTextField ->

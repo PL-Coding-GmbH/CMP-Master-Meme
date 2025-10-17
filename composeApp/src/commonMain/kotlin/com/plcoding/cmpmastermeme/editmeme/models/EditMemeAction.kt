@@ -14,6 +14,7 @@ sealed interface EditMemeAction {
     data class OnSaveMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
     data class OnShareMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
     data object OnContinueEditing : EditMemeAction
+    data object ClearSelectedMemeText : EditMemeAction
 
     // Text Management Actions
     data object OnAddNewMemeTextClick : EditMemeAction
@@ -27,6 +28,8 @@ sealed interface EditMemeAction {
     
     // Text Styling Actions
     data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
+    data object OnCancelFontResize : EditMemeAction
+    data object OnConfirmMemeFontTextResize : EditMemeAction
 
     // Layout Actions
     data class OnContainerSizeChanged(val size: IntSize) : EditMemeAction

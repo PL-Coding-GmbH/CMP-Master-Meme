@@ -5,10 +5,10 @@ package com.plcoding.cmpmastermeme.editmeme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,17 +16,17 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -45,7 +45,6 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
 import cmpmastermeme.composeapp.generated.resources.add_text
@@ -55,6 +54,7 @@ import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.FontSlider
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
@@ -65,6 +65,7 @@ import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -107,13 +108,31 @@ private fun EditMemeScreen(
     )
 
     Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onTap = {
+                    onAction(EditMemeAction.ClearSelectedMemeText)
+                }
+            )
+        },
         topBar = {
             TopBar(onGoBackClick = { onAction(EditMemeAction.OnGoBackClick) })
         },
         bottomBar = {
             BottomBar(
                 onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
-                onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) }
+                onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) },
+                onCancelFontResize = { onAction(EditMemeAction.OnCancelFontResize) },
+                onConfirmFontResize = { onAction(EditMemeAction.OnConfirmMemeFontTextResize)},
+                targetedMemeText = state.memeTexts.firstOrNull { it.id == state.textBoxInteraction.targetedTextBoxId },
+                onFontValueChange = { id, newFontSize ->
+                    onAction(
+                        EditMemeAction.OnMemeTextFontSizeChange(
+                            id = id,
+                            fontSize = newFontSize
+                        )
+                    )
+                }
             )
         }
     ) { paddingValues ->
@@ -141,26 +160,10 @@ private fun EditMemeScreen(
                 )
                 DraggableContainer(
                     children = state.memeTexts,
-                    selectedChildId = state.selectedTextBoxId,
-                    editingChildId = state.editingTextBoxId,
+                    textBoxInteractionState = state.textBoxInteraction,
                     onAction = onAction,
                     modifier = Modifier.matchParentSize()
                 )
-                
-                // Font size slider for selected text
-                state.selectedTextBoxId?.let { selectedId ->
-                    state.memeTexts.find { it.id == selectedId }?.let { selectedText ->
-                        TemporaryFontSizeSlider(
-                            fontSize = selectedText.fontSize,
-                            onFontSizeChange = { newSize ->
-                                onAction(EditMemeAction.OnMemeTextFontSizeChange(selectedId, newSize))
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                        )
-                    }
-                }
             }
         }
     }
@@ -199,8 +202,7 @@ private fun EditMemeScreen(
 private fun DraggableContainer(
     modifier: Modifier = Modifier,
     children: List<MemeText>,
-    selectedChildId: Int?,
-    editingChildId: Int?,
+    textBoxInteractionState: TextBoxInteractionState,
     onAction: (EditMemeAction) -> Unit
 ) {
     BoxWithConstraints(
@@ -238,7 +240,7 @@ private fun DraggableContainer(
                             )
                         )
                     }
-                    .pointerInput(child.id, selectedChildId) {
+                    .pointerInput(child.id, textBoxInteractionState.targetedTextBoxId) {
                         detectDragGestures(
                             onDragEnd = {
                                 // Update final position when drag ends
@@ -251,7 +253,7 @@ private fun DraggableContainer(
                                 )
                             }
                         ) { change, dragAmount ->
-                            if (selectedChildId == child.id) {
+                            if (textBoxInteractionState.targetedTextBoxId == child.id) {
                                 change.consume()
                                 val newX = offsetX + dragAmount.x
                                 val newY = offsetY + dragAmount.y
@@ -266,11 +268,15 @@ private fun DraggableContainer(
                         }
                     }
             ) {
+                val isSelected = textBoxInteractionState is TextBoxInteractionState.Selected
+                        && textBoxInteractionState.textBoxId == child.id
+                val isEditing = textBoxInteractionState is TextBoxInteractionState.Editing
+                        && textBoxInteractionState.textBoxId == child.id
                 MemeTextBox(
                     memeText = child,
                     modifier = Modifier.widthIn(max = (parentWidth * 0.5f).dp),
-                    isSelected = child.id == selectedChildId,
-                    isEditing = child.id == editingChildId,
+                    isSelected = isSelected,
+                    isEditing = isEditing,
                     onTextInputChange = {
                         onAction(
                             EditMemeAction.OnMemeTextChange(
@@ -320,66 +326,71 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     modifier: Modifier = Modifier,
+    targetedMemeText: MemeText?,
+    onFontValueChange: (id: Int, fontSize: Float) -> Unit,
     onAddTextClick: () -> Unit,
-    onSaveMemeClick: () -> Unit
+    onSaveMemeClick: () -> Unit,
+    onCancelFontResize: () -> Unit,
+    onConfirmFontResize: () -> Unit,
 ) {
-    Row(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
-    ) {
-        MemeSecondaryButton(
-            text = Res.string.add_text.asString(),
-            onClick = onAddTextClick
-        )
-        MemePrimaryButton(
-            text = Res.string.save_meme.asString(),
-            onClick = onSaveMemeClick
-        )
-    }
-}
-
-@Composable
-private fun TemporaryFontSizeSlider(
-    fontSize: Float,
-    onFontSizeChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        tonalElevation = 4.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+    if (targetedMemeText == null) {
+        Row(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
         ) {
-            Text(
-                text = "Font Size: ${fontSize.toInt()}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface
+            MemeSecondaryButton(
+                text = Res.string.add_text.asString(),
+                onClick = onAddTextClick
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            MemePrimaryButton(
+                text = Res.string.save_meme.asString(),
+                onClick = onSaveMemeClick
+            )
+        }
+    } else {
+        Row(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            IconButton(
+                onClick = { onCancelFontResize() },
+                colors = IconButtonDefaults.iconButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                ),
+                enabled = true,
+                modifier = modifier,
             ) {
-                Text(
-                    text = "A",
-                    fontSize = 12.sp,
-                    modifier = Modifier.width(24.dp)
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = null,
                 )
-                Slider(
-                    value = fontSize,
-                    onValueChange = onFontSizeChange,
-                    valueRange = 12f..72f,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "A",
-                    fontSize = 24.sp,
-                    modifier = Modifier.width(32.dp)
+            }
+            FontSlider(
+                value = targetedMemeText.fontSize / MAX_TEXT_FONT_SIZE,
+                onValueChange = { newScale ->
+                    onFontValueChange(targetedMemeText.id, MAX_TEXT_FONT_SIZE * newScale)
+                },
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = { onConfirmFontResize() },
+                colors = IconButtonDefaults.iconButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                ),
+                enabled = true,
+                modifier = modifier,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
                 )
             }
         }
@@ -391,9 +402,10 @@ private fun TemporaryFontSizeSlider(
 private fun Preview() {
     MasterMemeTheme {
         EditMemeScreen(
-            template = MemeTemplate.TEMPLATE_02,
+            template = MemeTemplate.TEMPLATE_04,
             onAction = {},
             state = EditMemeState(
+                textBoxInteraction = TextBoxInteractionState.Selected(0),
                 memeTexts = listOf(
                     MemeText(
                         id = 0,

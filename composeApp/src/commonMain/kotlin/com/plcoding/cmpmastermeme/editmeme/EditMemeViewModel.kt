@@ -13,6 +13,7 @@ import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
@@ -30,6 +31,8 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.qualifier.named
 
+const val MAX_TEXT_FONT_SIZE = 72f
+
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val sendableFileManager: SendableFileManager,
@@ -41,6 +44,8 @@ class EditMemeViewModel(
 
     private val eventChannel = Channel<EditMemeEvent>()
     val events = eventChannel.receiveAsFlow()
+
+    private var selectedTextFontSizeCache: Float? = null
 
     fun onAction(action: EditMemeAction) {
         when (action) {
@@ -71,6 +76,32 @@ class EditMemeViewModel(
             EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
             EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
             EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
+            EditMemeAction.OnCancelFontResize -> resetSelectedMemeFontText()
+            EditMemeAction.OnConfirmMemeFontTextResize,
+            EditMemeAction.ClearSelectedMemeText -> confirmFontSelection()
+        }
+    }
+
+    private fun confirmFontSelection() {
+        _state.update {
+            it.copy(
+                textBoxInteraction = TextBoxInteractionState.None
+            )
+        }
+    }
+
+    private fun resetSelectedMemeFontText() {
+        val targetMemeText = state.value.memeTexts.firstOrNull { it.id == state.value.textBoxInteraction.targetedTextBoxId }
+        if (targetMemeText == null) return
+        _state.update {
+            it.copy(
+                memeTexts = state.value.memeTexts.map { text ->
+                    if (text.id == state.value.textBoxInteraction.targetedTextBoxId)  {
+                        text.copy(fontSize = selectedTextFontSizeCache ?: (MAX_TEXT_FONT_SIZE / 2))
+                    } else text
+                },
+                textBoxInteraction = TextBoxInteractionState.None
+            )
         }
     }
 
@@ -193,10 +224,10 @@ class EditMemeViewModel(
     }
 
     private fun selectTextBox(id: Int) {
+        selectedTextFontSizeCache = state.value.memeTexts.firstOrNull { it.id == id }?.fontSize
         _state.update {
             it.copy(
-                selectedTextBoxId = id,
-                editingTextBoxId = null
+                textBoxInteraction = TextBoxInteractionState.Selected(id)
             )
         }
     }
@@ -204,8 +235,7 @@ class EditMemeViewModel(
     private fun editTextBox(id: Int) {
         _state.update {
             it.copy(
-                selectedTextBoxId = null,
-                editingTextBoxId = id
+                textBoxInteraction = TextBoxInteractionState.Editing(id)
             )
         }
     }
@@ -234,15 +264,15 @@ class EditMemeViewModel(
 
         val newBox = MemeText(
             id = newId,
-            text = "TAP TO EDIT",
+            text = "TAP TO EDIT", // TODO string resources
             offset = position,
-            fontSize = 36f
+            fontSize = MAX_TEXT_FONT_SIZE / 2
         )
 
         _state.update {
             it.copy(
                 memeTexts = currentState.memeTexts + newBox,
-                selectedTextBoxId = newId  // Auto-select the new text
+                textBoxInteraction = TextBoxInteractionState.Selected(newId)
             )
         }
     }
