@@ -37,7 +37,6 @@ actual class MemeExporter(
             val filePath = saveStrategy.getFilePath(fileName)
             val file = File(filePath)
 
-            // TODO co-operative compression
             FileOutputStream(file).use { out ->
                 outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
@@ -86,13 +85,9 @@ actual class MemeExporter(
         canvas: Canvas,
         box: MemeText,
     ) {
-        // Use a scaling factor to match Compose's rendering
-        // Compose seems to render text smaller than Android Canvas for the same SP value
-        // Halving the size works well
-        val scaleFactor = 0.5f
         val textSizePx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_SP,
-            box.fontSize * scaleFactor,
+            box.fontSize * 0.5f,
             context.resources.displayMetrics
         )
 

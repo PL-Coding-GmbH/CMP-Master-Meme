@@ -2,6 +2,7 @@ package com.plcoding.cmpmastermeme.memelist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import kotlinx.coroutines.channels.Channel
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 class MemeListViewModel(
     private val memeDataSource: MemeDataSource,
     private val sendableFileManager: SendableFileManager,
+    private val filePathResolver: FilePathResolver,
 ) : ViewModel() {
 
     private var hasInitialized = false
@@ -68,7 +70,7 @@ class MemeListViewModel(
         memeDataSource.observeAll()
             .onEach { memes ->
                 _state.update {
-                    it.copy(memes = memes.toMemeUiList())
+                    it.copy(memes = memes.toMemeUiList(filePathResolver))
                 }
             }
             .launchIn(viewModelScope)

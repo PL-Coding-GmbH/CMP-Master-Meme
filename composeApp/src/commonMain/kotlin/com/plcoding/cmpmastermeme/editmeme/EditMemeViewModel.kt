@@ -4,6 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.Meme
 import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
@@ -37,7 +38,8 @@ const val MAX_TEXT_FONT_SIZE = 72f
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val sendableFileManager: SendableFileManager,
-    private val memeDataSource: MemeDataSource
+    private val memeDataSource: MemeDataSource,
+    private val filePathResolver: FilePathResolver
 ) : ViewModel(), KoinComponent {
 
     private val _state = MutableStateFlow(EditMemeState())
@@ -162,8 +164,14 @@ class EditMemeViewModel(
             canvasSize = state.value.templateSize,
             saveStrategy = get(named("private_dir"))
         )
-            .onSuccess { uri ->
-                memeDataSource.save(Meme(imageUri = uri))
+            .onSuccess { filePath ->
+                /*
+                    Store only the filename, not the full path
+                    Used to store full path, but iOS apps run in a sandbox where the absolute path changes between app launches
+                    So yeah, we need a path resolver
+                 */
+                val fileName = filePathResolver.extractFileName(filePath)
+                memeDataSource.save(Meme(imageUri = fileName))
                 eventChannel.send(EditMemeEvent.SavedMeme)
             }
             .onFailure {

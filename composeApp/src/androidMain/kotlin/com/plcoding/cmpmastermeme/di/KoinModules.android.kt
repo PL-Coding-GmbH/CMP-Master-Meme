@@ -2,7 +2,9 @@ package com.plcoding.cmpmastermeme.di
 
 import com.plcoding.cmpmastermeme.core.database.DatabaseFactory
 import com.plcoding.cmpmastermeme.core.domain.CacheSaveStrategy
+import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
+import com.plcoding.cmpmastermeme.core.domain.PlatformFilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.PlatformSendableFileManager
 import com.plcoding.cmpmastermeme.core.domain.PrivateAppDirSaveStrategy
 import com.plcoding.cmpmastermeme.core.domain.SaveToStorageStrategy
@@ -25,4 +27,7 @@ actual val coreDataPlatformModule = module {
     factory {
         PlatformSendableFileManager(context = androidContext())
     }.bind<SendableFileManager>()
+    single {
+        PlatformFilePathResolver(context = androidContext())
+    }.bind<FilePathResolver>()
 }
