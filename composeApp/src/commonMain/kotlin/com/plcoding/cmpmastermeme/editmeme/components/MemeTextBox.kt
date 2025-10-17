@@ -79,50 +79,52 @@ fun MemeTextBox(
         }
     }
 
-    Box(
-        modifier = modifier
-            .sizeIn(maxWidth = maxWidth, maxHeight = maxHeight)
-            .border(
-                width = 2.dp,
-                color = if (isSelected || isEditing) Color.White else Color.Transparent,
-                shape = RoundedCornerShape(4.dp)
-            )
-            .background(
-                color = if (isEditing) {
-                    Color.Black.copy(alpha = 0.1f)
-                } else Color.Transparent,
-                shape = RoundedCornerShape(4.dp)
-            )
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onClick() },
-                    onDoubleTap = { onDoubleClick() }
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .sizeIn(maxWidth = maxWidth, maxHeight = maxHeight)
+                .border(
+                    width = 2.dp,
+                    color = if (isSelected || isEditing) Color.White else Color.Transparent,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .background(
+                    color = if (isEditing) {
+                        Color.Black.copy(alpha = 0.1f)
+                    } else Color.Transparent,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onClick() },
+                        onDoubleTap = { onDoubleClick() }
+                    )
+                }
+        ) {
+            val textPadding = 8.dp
+            if (isEditing) {
+                OutlinedTextField(
+                    text = memeText.text,
+                    fontSize = memeText.fontSize,
+                    fontFamily = Impact,
+                    onTextChange = onTextInputChange,
+                    // Accounting here for padding
+                    maxWidth = maxWidth - (textPadding * 2),
+                    maxHeight = maxHeight - (textPadding * 2),
+                    modifier = Modifier
+                        .focusRequester(editableMemeText)
+                        .padding(textPadding)
+                )
+            } else {
+                OutlinedText(
+                    text = memeText.text,
+                    fontSize = memeText.fontSize,
+                    // Accounting here for padding
+                    maxWidth = maxWidth - (textPadding * 2),
+                    maxHeight = maxHeight - (textPadding * 2),
+                    modifier = Modifier.padding(textPadding)
                 )
             }
-    ) {
-        val textPadding = 8.dp
-        if (isEditing) {
-            OutlinedTextField(
-                text = memeText.text,
-                fontSize = memeText.fontSize,
-                fontFamily = Impact,
-                onTextChange = onTextInputChange,
-                // Accounting here for padding
-                maxWidth = maxWidth - (textPadding * 2),
-                maxHeight = maxHeight - (textPadding * 2),
-                modifier = Modifier
-                    .focusRequester(editableMemeText)
-                    .padding(textPadding)
-            )
-        } else {
-            OutlinedText(
-                text = memeText.text,
-                fontSize = memeText.fontSize,
-                // Accounting here for padding
-                maxWidth = maxWidth - (textPadding * 2),
-                maxHeight = maxHeight - (textPadding * 2),
-                modifier = Modifier.padding(textPadding)
-            )
         }
         if (isSelected || isEditing) {
             Box(
