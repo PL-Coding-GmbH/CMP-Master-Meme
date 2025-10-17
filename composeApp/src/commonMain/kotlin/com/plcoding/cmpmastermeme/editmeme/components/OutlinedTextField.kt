@@ -92,34 +92,34 @@ fun OutlinedTextField(
             height = textLayoutResult.size.height.toDp()
         )
     }
-    
-    Box(
+
+    BasicTextField(
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            textFieldValue = newValue
+            onTextChange(newValue.text)
+        },
+        textStyle = textStyle.copy(color = Color.Transparent),
+        cursorBrush = SolidColor(Color.White),
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = false,
         modifier = modifier.size(textSize)
-    ) {
-        // Background outlined text showing the current text
-        OutlinedText(
-            text = textFieldValue.text,
-            fontSize = fontSize,
-            fontFamily = fontFamily,
-            fillColor = fillColor,
-            strokeColor = strokeColor,
-            strokeWidth = strokeWidth,
-            textAlign = textAlign
-        )
-        
-        // Overlay transparent text field for editing
-        BasicTextField(
-            value = textFieldValue,
-            onValueChange = { newValue ->
-                textFieldValue = newValue
-                onTextChange(newValue.text)
-            },
-            textStyle = textStyle.copy(color = Color.Transparent),
-            cursorBrush = SolidColor(Color.White),
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            singleLine = false
-        )
+    )
+    { innerTextField ->
+        Box {
+            OutlinedText(
+                text = textFieldValue.text,
+                fontSize = fontSize,
+                fontFamily = fontFamily,
+                fillColor = fillColor,
+                strokeColor = strokeColor,
+                strokeWidth = strokeWidth,
+                textAlign = textAlign
+            )
+            // Invisible text field for cursor
+            innerTextField()
+        }
     }
 }
 

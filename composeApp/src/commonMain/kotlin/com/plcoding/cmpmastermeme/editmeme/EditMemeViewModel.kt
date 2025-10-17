@@ -61,6 +61,10 @@ class EditMemeViewModel(
             )
 
             is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
+            is EditMemeAction.OnMemeTextFontSizeChange -> onTextBoxFontSizeChange(
+                textBoxId = action.id,
+                fontSize = action.fontSize
+            )
             EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
             EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
             is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
@@ -170,6 +174,18 @@ class EditMemeViewModel(
         }
     }
 
+    private fun onTextBoxFontSizeChange(textBoxId: Int, fontSize: Float) {
+        _state.update {
+            it.copy(
+                memeTexts = it.memeTexts.map { textBox ->
+                    if (textBox.id == textBoxId) {
+                        textBox.copy(fontSize = fontSize)
+                    } else textBox
+                }
+            )
+        }
+    }
+
     private fun updateTemplateSize(size: IntSize) {
         _state.update {
             it.copy(templateSize = size)
@@ -206,18 +222,27 @@ class EditMemeViewModel(
         val currentState = state.value
         val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
 
-        // Place new text at top-left corner
-        val position = Offset(0f, 0f)
+        // Place new text at center if template size is known, otherwise top-left
+        val position = if (currentState.templateSize != IntSize.Zero) {
+            Offset(
+                x = (currentState.templateSize.width * 0.25f),
+                y = (currentState.templateSize.height * 0.25f)
+            )
+        } else {
+            Offset(50f, 50f)
+        }
 
         val newBox = MemeText(
             id = newId,
-            text = "Tap to edit",
+            text = "TAP TO EDIT",
             offset = position,
+            fontSize = 36f
         )
 
         _state.update {
             it.copy(
-                memeTexts = currentState.memeTexts + newBox
+                memeTexts = currentState.memeTexts + newBox,
+                selectedTextBoxId = newId  // Auto-select the new text
             )
         }
     }

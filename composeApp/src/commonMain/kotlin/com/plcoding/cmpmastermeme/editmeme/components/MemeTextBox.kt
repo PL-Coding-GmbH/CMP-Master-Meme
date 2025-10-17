@@ -85,13 +85,13 @@ fun MemeTextBox(
     Box(
         modifier = modifier
             .border(
-                width = 1.dp,
+                width = 2.dp,
                 color = if (isSelected || isEditing) Color.White else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
             .background(
                 color = if (isEditing) {
-                    Color.LightGray.copy(alpha = 0.5f)
+                    Color.Black.copy(alpha = 0.1f)
                 } else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
@@ -110,13 +110,13 @@ fun MemeTextBox(
                 onTextChange = onTextInputChange,
                 modifier = Modifier
                     .focusRequester(editableMemeText)
-                    .padding(4.dp)
+                    .padding(8.dp)
             )
         } else {
             OutlinedText(
                 text = memeText.text,
                 fontSize = memeText.fontSize,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier.padding(8.dp)
             )
         }
         if (isSelected || isEditing) {
@@ -163,13 +163,11 @@ private fun Preview() {
     }
 
     MasterMemeTheme {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Yellow.copy(alpha = 0.2f))
+                .background(Color.LightGray)
                 .size(400.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            contentAlignment = Alignment.Center,
         ) {
             MemeTextBox(
                 memeText = memeText,
@@ -183,17 +181,6 @@ private fun Preview() {
                 onClick = { isSelected = true; isEditing = false },
                 onDoubleClick = { isEditing = true; isSelected = false }
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    isSelected = false
-                    isEditing = false
-                }
-            ) {
-                Text("Clear Focus")
-            }
         }
     }
 }

@@ -8,12 +8,15 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -22,6 +25,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -40,6 +45,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
 import cmpmastermeme.composeapp.generated.resources.add_text
@@ -140,6 +146,21 @@ private fun EditMemeScreen(
                     onAction = onAction,
                     modifier = Modifier.matchParentSize()
                 )
+                
+                // Font size slider for selected text
+                state.selectedTextBoxId?.let { selectedId ->
+                    state.memeTexts.find { it.id == selectedId }?.let { selectedText ->
+                        TemporaryFontSizeSlider(
+                            fontSize = selectedText.fontSize,
+                            onFontSizeChange = { newSize ->
+                                onAction(EditMemeAction.OnMemeTextFontSizeChange(selectedId, newSize))
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -218,8 +239,20 @@ private fun DraggableContainer(
                         )
                     }
                     .pointerInput(child.id, selectedChildId) {
-                        detectDragGestures { _, dragAmount ->
+                        detectDragGestures(
+                            onDragEnd = {
+                                // Update final position when drag ends
+                                onAction(
+                                    EditMemeAction.OnMemeTextPositionChange(
+                                        id = child.id,
+                                        x = offsetX,
+                                        y = offsetY
+                                    )
+                                )
+                            }
+                        ) { change, dragAmount ->
                             if (selectedChildId == child.id) {
+                                change.consume()
                                 val newX = offsetX + dragAmount.x
                                 val newY = offsetY + dragAmount.y
 
@@ -305,6 +338,51 @@ private fun BottomBar(
             text = Res.string.save_meme.asString(),
             onClick = onSaveMemeClick
         )
+    }
+}
+
+@Composable
+private fun TemporaryFontSizeSlider(
+    fontSize: Float,
+    onFontSizeChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+        tonalElevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Font Size: ${fontSize.toInt()}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "A",
+                    fontSize = 12.sp,
+                    modifier = Modifier.width(24.dp)
+                )
+                Slider(
+                    value = fontSize,
+                    onValueChange = onFontSizeChange,
+                    valueRange = 12f..72f,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "A",
+                    fontSize = 24.sp,
+                    modifier = Modifier.width(32.dp)
+                )
+            }
+        }
     }
 }
 

@@ -24,6 +24,9 @@ sealed interface EditMemeAction {
 
     // Text Positioning Actions
     data class OnMemeTextPositionChange(val id: Int, val x: Float, val y: Float) : EditMemeAction
+    
+    // Text Styling Actions
+    data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
 
     // Layout Actions
     data class OnContainerSizeChanged(val size: IntSize) : EditMemeAction

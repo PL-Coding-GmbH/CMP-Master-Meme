@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -53,11 +54,15 @@ fun OutlinedText(
                 height = with(density) { textLayoutResult.size.height.toDp() }
             )
     ) {
-        // Draw stroke (outline)
+        // Draw stroke (outline) with rounded joins for better appearance
         drawText(
             textLayoutResult = textLayoutResult,
             color = strokeColor,
-            drawStyle = Stroke(width = strokeWidth)
+            drawStyle = Stroke(
+                width = strokeWidth,
+                miter = 10f,
+                join = StrokeJoin.Round
+            )
         )
 
         // Draw fill on top
