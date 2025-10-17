@@ -120,6 +120,7 @@ private fun EditMemeScreen(
         },
         bottomBar = {
             BottomBar(
+                modifier = Modifier.padding(vertical = 8.dp),
                 onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) },
                 onCancelFontResize = { onAction(EditMemeAction.OnCancelFontResize) },
@@ -367,7 +368,6 @@ private fun BottomBar(
                     contentColor = MaterialTheme.colorScheme.secondary,
                 ),
                 enabled = true,
-                modifier = modifier,
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -388,7 +388,6 @@ private fun BottomBar(
                     contentColor = MaterialTheme.colorScheme.secondary,
                 ),
                 enabled = true,
-                modifier = modifier,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
