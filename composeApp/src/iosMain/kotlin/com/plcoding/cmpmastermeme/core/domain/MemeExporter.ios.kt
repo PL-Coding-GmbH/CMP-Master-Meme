@@ -2,11 +2,9 @@
 
 package com.plcoding.cmpmastermeme.core.domain
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.useContents
@@ -16,9 +14,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import platform.CoreGraphics.CGContextRef
-import platform.CoreGraphics.CGRect
+import platform.CoreGraphics.CGContextRestoreGState
+import platform.CoreGraphics.CGContextRotateCTM
+import platform.CoreGraphics.CGContextSaveGState
+import platform.CoreGraphics.CGContextScaleCTM
+import platform.CoreGraphics.CGContextTranslateCTM
 import platform.CoreGraphics.CGRectMake
-import platform.CoreGraphics.CGSize
 import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSData
 import platform.Foundation.NSNumber
@@ -27,11 +28,12 @@ import platform.Foundation.create
 import platform.Foundation.writeToFile
 import platform.UIKit.NSFontAttributeName
 import platform.UIKit.NSForegroundColorAttributeName
+import platform.UIKit.NSLineBreakByWordWrapping
 import platform.UIKit.NSMutableParagraphStyle
 import platform.UIKit.NSParagraphStyleAttributeName
 import platform.UIKit.NSStrokeColorAttributeName
 import platform.UIKit.NSStrokeWidthAttributeName
-import platform.UIKit.NSTextAlignmentCenter
+import platform.UIKit.NSTextAlignmentLeft
 import platform.UIKit.UIColor
 import platform.UIKit.UIFont
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
@@ -40,10 +42,18 @@ import platform.UIKit.UIGraphicsGetCurrentContext
 import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
-import platform.UIKit.drawInRect
-import platform.UIKit.sizeWithAttributes
+import platform.UIKit.UIScreen
+import platform.UIKit.boundingRectWithSize
+import platform.UIKit.drawWithRect
+import kotlin.math.PI
 
 actual class MemeExporter {
+
+    private val calculator by lazy {
+        MemeRenderCalculator(
+            density = UIScreen.mainScreen.scale.toFloat()
+        )
+    }
 
     actual suspend fun exportMeme(
         backgroundImageBytes: ByteArray,
@@ -94,7 +104,13 @@ actual class MemeExporter {
     private fun renderMeme(
         backgroundImage: UIImage, textBoxes: List<MemeText>, canvasSize: IntSize
     ): UIImage? {
-        beginImageContext(canvasSize)
+        // Use the actual image size for the context, not the display size
+        val imageSize = IntSize(
+            width = backgroundImage.size.useContents { width.toInt() },
+            height = backgroundImage.size.useContents { height.toInt() }
+        )
+
+        beginImageContext(imageSize)
 
         val context = UIGraphicsGetCurrentContext()
         if (context == null) {
@@ -102,12 +118,26 @@ actual class MemeExporter {
             return null
         }
 
-        drawBackground(backgroundImage, canvasSize)
+        drawBackground(backgroundImage, imageSize)
 
-        textBoxes.forEach { textBox ->
+        // Calculate scale factors from display to image coordinates
+        val scaleFactors = calculator.calculateScaleFactors(
+            imageSize.width,
+            imageSize.height,
+            canvasSize
+        )
+
+        // Convert text boxes to scaled coordinates
+        val scaledBoxes = calculator.calculateScaledTextBoxes(
+            textBoxes,
+            scaleFactors,
+            canvasSize.width
+        )
+
+        scaledBoxes.forEach { scaledBox ->
             drawTextBox(
-                textBox = textBox,
-                canvasSize = canvasSize
+                context = context,
+                scaledBox = scaledBox
             )
         }
 
@@ -119,7 +149,6 @@ actual class MemeExporter {
 
     /**
      * Creates an iOS offscreen graphics context for drawing.
-     * false = opaque background, 0.0 = use device's natural scale factor.
      */
     @OptIn(ExperimentalForeignApi::class)
     private fun beginImageContext(size: IntSize) {
@@ -169,64 +198,136 @@ actual class MemeExporter {
 
     /**
      * Renders a single text box with meme-style formatting (white text, black outline).
-     * Uses the graphics context for precise positioning and scaling relative to canvas size.
+     * Applies rotation and scaling transformations around the text center.
      */
     @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
     private fun drawTextBox(
-        textBox: MemeText,
-        canvasSize: IntSize
+        context: CGContextRef,
+        scaledBox: ScaledTextBox
     ) {
-        val scaledFontSize = textBox.fontSize
-        val attributes = createTextAttributes(scaledFontSize)
-        val textNS = NSString.create(string = textBox.text)
-        val textSize = textNS.sizeWithAttributes(attributes)
-        val drawRect = createTextRect(textBox.offset, textSize, canvasSize)
+        // Create text attributes for measuring (use fill attributes for accurate size)
+        val fillAttributes = createTextAttributes(scaledBox.scaledFontSize, isStroke = false)
+        val strokeAttributes = createTextAttributes(
+            scaledBox.scaledFontSize,
+            isStroke = true,
+            strokeWidth = scaledBox.strokeWidth
+        )
+        val textNS = NSString.create(string = scaledBox.text)
 
-        textNS.drawInRect(drawRect, withAttributes = attributes)
+        // Calculate actual text size with wrapping using fill attributes
+        val boundingRect = textNS.boundingRectWithSize(
+            size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
+            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
+            attributes = fillAttributes,
+            context = null
+        )
+
+        val actualTextWidth = boundingRect.useContents { size.width }
+        val actualTextHeight = boundingRect.useContents { size.height }
+
+        // Calculate pivot points for rotation
+        val boxWithPivots = calculator.calculatePivotPoints(
+            scaledBox,
+            actualTextWidth.toFloat(),
+            actualTextHeight.toFloat()
+        )
+
+        // Get text drawing position (with padding)
+        val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
+
+        // Save the current graphics state
+        CGContextSaveGState(context)
+
+        // Apply transformations around the pivot point
+        // 1. Translate to pivot
+        CGContextTranslateCTM(
+            context,
+            boxWithPivots.pivotX.toDouble(),
+            boxWithPivots.pivotY.toDouble()
+        )
+
+        // 2. Apply scale (only user-applied scale, not the font scale which is already in scaledFontSize)
+        CGContextScaleCTM(context, boxWithPivots.scale.toDouble(), boxWithPivots.scale.toDouble())
+
+        // 3. Apply rotation (convert degrees to radians)
+        val radians = boxWithPivots.rotation * PI / 180.0
+        CGContextRotateCTM(context, radians)
+
+        // 4. Translate back from pivot
+        CGContextTranslateCTM(
+            context,
+            -boxWithPivots.pivotX.toDouble(),
+            -boxWithPivots.pivotY.toDouble()
+        )
+
+        // Draw the text at the calculated position
+        val finalDrawRect = CGRectMake(
+            x = textPosition.x.toDouble(),
+            y = textPosition.y.toDouble(),
+            width = scaledBox.constraintWidth.toDouble(),
+            height = actualTextHeight
+        )
+
+        // Draw stroke first (behind fill)
+        textNS.drawWithRect(
+            rect = finalDrawRect,
+            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
+            attributes = strokeAttributes,
+            context = null
+        )
+
+        // Draw fill on top
+        textNS.drawWithRect(
+            rect = finalDrawRect,
+            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
+            attributes = fillAttributes,
+            context = null
+        )
+
+        // Restore the graphics state
+        CGContextRestoreGState(context)
     }
 
     /**
      * Creates iOS text styling attributes for meme text.
-     *
-     * NSStrokeWidthAttributeName controls text stroke behavior:
-     * - Positive values (e.g., 3.0): Hollow outline only, no fill
-     * - Negative values (e.g., -3.0): Filled text WITH outline (perfect for memes)
-     * - Zero (0.0): No stroke, filled text only
-     * - Higher absolute values = thicker stroke (e.g., -5.0 = thicker outline than -2.0)
-     *
-     * For our meme text, we use -3.0 to get white filled text with black outline.
+     * Creates separate attributes for stroke and fill to match Android's approach.
      */
-    private fun createTextAttributes(fontSize: Float): Map<Any?, Any?> {
-        val font = UIFont.boldSystemFontOfSize(fontSize.toDouble())
+    private fun createTextAttributes(
+        fontSize: Float,
+        isStroke: Boolean,
+        strokeWidth: Float = 0f
+    ): Map<Any?, Any?> {
+        // Load the custom Impact font from bundle
+        // The font file is in the app bundle from Compose resources
+        val font = UIFont.fontWithName("Impact", size = fontSize.toDouble())
+            ?: UIFont.boldSystemFontOfSize(fontSize.toDouble())
+
         val paragraphStyle = NSMutableParagraphStyle().apply {
-            setAlignment(NSTextAlignmentCenter)
+            setAlignment(NSTextAlignmentLeft)
+            setLineBreakMode(NSLineBreakByWordWrapping)
         }
 
-        return mapOf(
-            NSFontAttributeName to font,
-            NSForegroundColorAttributeName to UIColor.whiteColor,
-            NSStrokeColorAttributeName to UIColor.blackColor,
-            NSStrokeWidthAttributeName to NSNumber(-3.0),
-            NSParagraphStyleAttributeName to paragraphStyle
-        )
-    }
-
-
-    /**
-     * Creates a CGRect (iOS rectangle) for text positioning.
-     * Centers text horizontally and positions it relative to canvas size with bounds checking.
-     */
-    private fun createTextRect(
-        offset: Offset,
-        textSize: CValue<CGSize>,
-        canvasSize: IntSize
-    ): CValue<CGRect> {
-        return textSize.useContents {
-            CGRectMake(
-                x = offset.x.toDouble(),
-                y = offset.y.toDouble(),
-                width = width,
-                height = height
+        return if (isStroke) {
+            // Stroke only (positive value = hollow text)
+            // Convert actual stroke width to percentage of font size for iOS
+            val strokePercentage = if (strokeWidth > 0) {
+                (strokeWidth / fontSize * 100).toDouble().coerceIn(1.0, 10.0)
+            } else {
+                3.0 // Fallback value
+            }
+            mapOf(
+                NSFontAttributeName to font,
+                NSForegroundColorAttributeName to UIColor.clearColor(),
+                NSStrokeColorAttributeName to UIColor.blackColor,
+                NSStrokeWidthAttributeName to NSNumber(strokePercentage),
+                NSParagraphStyleAttributeName to paragraphStyle
+            )
+        } else {
+            // Fill only
+            mapOf(
+                NSFontAttributeName to font,
+                NSForegroundColorAttributeName to UIColor.whiteColor,
+                NSParagraphStyleAttributeName to paragraphStyle
             )
         }
     }
