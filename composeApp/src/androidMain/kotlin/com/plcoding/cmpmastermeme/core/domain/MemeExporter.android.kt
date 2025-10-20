@@ -18,6 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import androidx.core.graphics.withRotation
+import androidx.core.graphics.withScale
+import androidx.core.graphics.withTranslation
 
 actual class MemeExporter(
     private val context: Context
@@ -62,20 +65,23 @@ actual class MemeExporter(
         val bitmapWidth = background.width.toFloat()
         val bitmapHeight = background.height.toFloat()
 
-        // Calculate scaling factors from display size to bitmap size
-        // Without scaling factor, small offsets on screen translates to larger offsets on rendered image
         val scaleX = if (displaySize.width > 0) bitmapWidth / displaySize.width else 1f
         val scaleY = if (displaySize.height > 0) bitmapHeight / displaySize.height else 1f
 
         textBoxes.forEach { box ->
-            // Scale the position from display coordinates to bitmap coordinates
             val scaledBox = box.copy(
                 offset = Offset(
                     x = box.offset.x * scaleX,
                     y = box.offset.y * scaleY
-                )
+                ),
             )
-            drawText(canvas, scaledBox)
+            drawText(
+                canvas = canvas,
+                box = scaledBox,
+                scaleX = scaleX,
+                scaleY = scaleY,
+                displayWidth = displaySize.width,
+            )
         }
 
         return output
@@ -84,16 +90,32 @@ actual class MemeExporter(
     private fun drawText(
         canvas: Canvas,
         box: MemeText,
+        scaleX: Float,
+        scaleY: Float,
+        displayWidth: Int,
     ) {
+        val bitmapScale = (scaleX + scaleY) / 2f
+
+        // Convert the 8dp padding from the editor to bitmap pixels
+        val textPaddingDp = 8f
+        val textPaddingPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            textPaddingDp,
+            context.resources.displayMetrics
+        )
+        val textPaddingBitmapX = textPaddingPx * scaleX
+        val textPaddingBitmapY = textPaddingPx * scaleY
+
+        // Font size WITHOUT box.scale - that's applied via canvas scaling
         val textSizePx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_SP,
-            box.fontSize * 0.5f,
+            box.fontSize * bitmapScale,
             context.resources.displayMetrics
         )
 
         val strokeWidthPx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
-            1f,
+            1f * bitmapScale,
             context.resources.displayMetrics
         )
 
@@ -116,21 +138,61 @@ actual class MemeExporter(
             textAlign = Paint.Align.LEFT
         }
 
-        /*
-            There is a difference in what the offset means
-            - In Compose UI the offset is the top-left corner of the text box
-            - In drawText() the y-coordinate is the baseline of the text
+        // Match editor constraint
+        // The editor uses (displayWidth * 0.3f / zoom).dp which incorrectly treats pixels as dp
+        // This gets multiplied by density during layout, so we must account for it here
+        val density = context.resources.displayMetrics.density
+        val constraintWidthBitmap = ((displayWidth * 0.3f / box.scale) * density * scaleX).toInt()
+            .coerceAtLeast(1)
 
-            That is why we use fontMetric.top (a negative value) to start drawing higher
-            to match the visual the user sees on the screen.
+        // Use StaticLayout to handle text wrapping
+        val strokeLayout = android.text.StaticLayout.Builder.obtain(
+            box.text,
+            0,
+            box.text.length,
+            android.text.TextPaint(strokePaint),
+            constraintWidthBitmap
+        )
+            .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+            .setIncludePad(false)
+            .build()
 
-            Here is a visual: https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.loli.net%2F2021%2F09%2F18%2FUTeL41J7sRImD8H.jpg&f=1&nofb=1&ipt=ce1cb7c1b0ae3e938637c28295f77ccbefd0ec3d49444e456276062e1ac42485
-         */
-        val x = box.offset.x
-        val y = box.offset.y - strokePaint.fontMetrics.top
-        
-        // Draw stroke first, then fill on top - order matters to get the same appearance as on the screen
-        canvas.drawText(box.text, x, y, strokePaint)
-        canvas.drawText(box.text, x, y, fillPaint)
+        val fillLayout = android.text.StaticLayout.Builder.obtain(
+            box.text,
+            0,
+            box.text.length,
+            android.text.TextPaint(fillPaint),
+            constraintWidthBitmap
+        )
+            .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+            .setIncludePad(false)
+            .build()
+
+        // Get text layout dimensions
+        val textWidth = strokeLayout.width.toFloat()
+        val textHeight = strokeLayout.height.toFloat()
+
+        // Calculate outer box dimensions (text + padding on all sides)
+        val outerBoxWidth = textWidth + textPaddingBitmapX * 2
+        val outerBoxHeight = textHeight + textPaddingBitmapY * 2
+
+        // Pivot at the center of the OUTER BOX
+        // box.offset points to top-left of the outer box
+        val pivotX = box.offset.x + outerBoxWidth / 2f
+        val pivotY = box.offset.y + outerBoxHeight / 2f
+
+        // Text drawing position is offset by padding from box position
+        val textTopLeftX = box.offset.x + textPaddingBitmapX
+        val textTopLeftY = box.offset.y + textPaddingBitmapY
+
+        // Apply transformations: scale -> rotate -> translate
+        canvas.withScale(box.scale, box.scale, pivotX, pivotY) {
+            canvas.withRotation(box.rotation, pivotX, pivotY) {
+                canvas.withTranslation(textTopLeftX, textTopLeftY) {
+                    strokeLayout.draw(this)
+                    fillLayout.draw(this)
+                }
+            }
+        }
     }
 }

@@ -7,4 +7,6 @@ data class MemeText(
     val text: String,
     val fontSize: Float = 36f,
     val offset: Offset = Offset.Zero,
+    val rotation: Float = 0f,
+    val scale: Float = 1f
 )

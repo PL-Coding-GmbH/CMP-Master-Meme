@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -44,7 +43,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,8 +69,6 @@ import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.math.PI
-import kotlin.math.roundToInt
 
 @Composable
 fun EditMemeScreenRoot(
@@ -229,16 +225,6 @@ private fun DraggableContainer(
                 mutableStateOf(0f)
             }
 
-            LaunchedEffect(offset) {
-                onAction(
-                    EditMemeAction.OnMemeTextPositionChange(
-                        id = child.id,
-                        x = offset.x,
-                        y = offset.y
-                    )
-                )
-            }
-
             val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
                 // 1) Update rotation
                 rotation += rotationChange
@@ -277,8 +263,17 @@ private fun DraggableContainer(
                 val maxY = parentHeight - childHeight - scaleOffsetY - rotationOffsetY
 
                 offset = Offset(
-                    x = (offset.x + zoom * rotatedPanX).coerceIn(minX, maxX),
-                    y = (offset.y + zoom * rotatedPanY).coerceIn(minY, maxY)
+                    x = (offset.x + zoom * rotatedPanX).coerceIn(minOf(minX, maxX), maxOf(minX, maxX)),
+                    y = (offset.y + zoom * rotatedPanY).coerceIn(minOf(minY, maxY), maxOf(minY, maxY))
+                )
+
+                onAction(
+                    EditMemeAction.OnMemeTextTransformChanged(
+                        id = child.id,
+                        offset = offset,
+                        rotation = rotation,
+                        scale = zoom
+                    )
                 )
             }
 

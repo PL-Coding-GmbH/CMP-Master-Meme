@@ -1,5 +1,6 @@
 package com.plcoding.cmpmastermeme.editmeme.models
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 
@@ -24,8 +25,13 @@ sealed interface EditMemeAction {
     data class OnDeleteMemeText(val id: Int) : EditMemeAction
 
     // Text Positioning Actions
-    data class OnMemeTextPositionChange(val id: Int, val x: Float, val y: Float) : EditMemeAction
-    
+    data class OnMemeTextTransformChanged(
+        val id: Int,
+        val offset: Offset,
+        val rotation: Float,
+        val scale: Float
+    ) : EditMemeAction
+
     // Text Styling Actions
     data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
     data object OnCancelFontResize : EditMemeAction

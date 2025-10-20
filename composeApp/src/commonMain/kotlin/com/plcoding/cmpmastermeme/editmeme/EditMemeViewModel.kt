@@ -62,10 +62,11 @@ class EditMemeViewModel(
                 text = action.text
             )
 
-            is EditMemeAction.OnMemeTextPositionChange -> onTextBoxPositionChange(
+            is EditMemeAction.OnMemeTextTransformChanged -> onTextBoxPositionChange(
                 textBoxId = action.id,
-                x = action.x,
-                y = action.y
+                offset = action.offset,
+                rotation = action.rotation,
+                scale = action.scale
             )
 
             is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
@@ -202,12 +203,21 @@ class EditMemeViewModel(
         }
     }
 
-    private fun onTextBoxPositionChange(textBoxId: Int, x: Float, y: Float) {
+    private fun onTextBoxPositionChange(
+        textBoxId: Int,
+        offset: Offset,
+        rotation: Float,
+        scale: Float
+    ) {
         _state.update {
             it.copy(
                 memeTexts = it.memeTexts.map { textBox ->
                     if (textBox.id == textBoxId) {
-                        textBox.copy(offset = Offset(x, y))
+                        textBox.copy(
+                            offset = offset,
+                            rotation = rotation,
+                            scale = scale
+                        )
                     } else textBox
                 }
             )
