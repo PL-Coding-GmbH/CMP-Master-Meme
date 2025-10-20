@@ -243,15 +243,27 @@ private fun DraggableContainer(
                 // 3) Update zoom
                 zoom = (zoom * zoomChange).coerceIn(0.5f, 5f)
 
-                // 4) Apply scaled pan with bounds (like your other project)
+                // 4) Calculate the axis-aligned bounding box of the rotated element
                 val scaledWidth = childWidth * zoom
                 val scaledHeight = childHeight * zoom
 
-                // Allow negative offsets when element is larger than parent
-                val minX = (parentWidth - scaledWidth).coerceAtMost(0f)
-                val maxX = (parentWidth - scaledWidth).coerceAtLeast(0f)
-                val minY = (parentHeight - scaledHeight).coerceAtMost(0f)
-                val maxY = (parentHeight - scaledHeight).coerceAtLeast(0f)
+                // Visual bounds after rotation (absolute values since rotation can be any angle)
+                val visualWidth = kotlin.math.abs(scaledWidth * cos) + kotlin.math.abs(scaledHeight * sin)
+                val visualHeight = kotlin.math.abs(scaledWidth * sin) + kotlin.math.abs(scaledHeight * cos)
+
+                // Offset from layout center to visual center due to scaling
+                val scaleOffsetX = (scaledWidth - childWidth) / 2
+                val scaleOffsetY = (scaledHeight - childHeight) / 2
+
+                // Additional offset due to rotation changing the bounding box
+                val rotationOffsetX = (visualWidth - scaledWidth) / 2
+                val rotationOffsetY = (visualHeight - scaledHeight) / 2
+
+                // Total visual extent
+                val minX = scaleOffsetX + rotationOffsetX
+                val maxX = parentWidth - childWidth - scaleOffsetX - rotationOffsetX
+                val minY = scaleOffsetY + rotationOffsetY
+                val maxY = parentHeight - childHeight - scaleOffsetY - rotationOffsetY
 
                 offset = Offset(
                     x = (offset.x + zoom * rotatedPanX).coerceIn(minX, maxX),
