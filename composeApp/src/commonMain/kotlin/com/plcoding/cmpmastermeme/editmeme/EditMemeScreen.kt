@@ -4,8 +4,9 @@ package com.plcoding.cmpmastermeme.editmeme
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -39,9 +38,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -213,66 +214,97 @@ private fun DraggableContainer(
         val parentHeight = constraints.maxHeight
 
         children.forEach { child ->
-            var offsetX by remember(child.id) { mutableStateOf(child.offset.x) }
-            var offsetY by remember(child.id) { mutableStateOf(child.offset.y) }
             var childWidth by remember { mutableStateOf(0) }
             var childHeight by remember { mutableStateOf(0) }
 
+            var zoom by remember {
+                mutableStateOf(1f)
+            }
+            var offset by remember {
+                mutableStateOf(Offset(child.offset.x, child.offset.y))
+            }
+            var rotation by remember {
+                mutableStateOf(0f)
+            }
+
+            val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
+                zoom = (zoom * zoomChange).coerceIn(0.5f, 1f)
+
+                val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
+                val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+
+                offset = Offset(
+                    x = (offset.x + zoom * panChange.x).coerceIn(0f, maxX),
+                    y = (offset.y + zoom * panChange.y).coerceIn(0f, maxY)
+                )
+                rotation += rotationChange
+            }
+
             Box(
                 modifier = Modifier
-                    .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                    .onPlaced { coordinates ->
-                        // Get the actual size of the child
-                        childWidth = coordinates.size.width
-                        childHeight = coordinates.size.height
-
-                        // Ensure child stays within bounds after measurement
-                        val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
-                        val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
-
-                        offsetX = offsetX.coerceIn(0f, maxX)
-                        offsetY = offsetY.coerceIn(0f, maxY)
-
-                        onAction(
-                            EditMemeAction.OnMemeTextPositionChange(
-                                id = child.id,
-                                x = offsetX,
-                                y = offsetY
-                            )
-                        )
+                    .onSizeChanged {
+                        childWidth = it.width
+                        childHeight = it.height
                     }
-                    .pointerInput(child.id, textBoxInteractionState.targetedTextBoxId) {
-                        detectDragGestures(
-                            onDragEnd = {
-                                // Update final position when drag ends
-                                onAction(
-                                    EditMemeAction.OnMemeTextPositionChange(
-                                        id = child.id,
-                                        x = offsetX,
-                                        y = offsetY
-                                    )
-                                )
-                            }
-                        ) { change, dragAmount ->
-                            if (textBoxInteractionState.targetedTextBoxId == child.id) {
-                                change.consume()
-                                val newX = offsetX + dragAmount.x
-                                val newY = offsetY + dragAmount.y
-
-                                // Constrain to parent bounds
-                                val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
-                                val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
-
-                                offsetX = newX.coerceIn(0f, maxX)
-                                offsetY = newY.coerceIn(0f, maxY)
-                            }
-                        }
+                    .graphicsLayer {
+                        translationX = offset.x
+                        translationY = offset.y
+                        rotationZ = rotation
+                        scaleX = zoom
+                        scaleY = zoom
                     }
+                    .transformable(gestureState)
+
+//                    .onPlaced { coordinates ->
+//                        // Get the actual size of the child
+//                        childWidth = coordinates.size.width
+//                        childHeight = coordinates.size.height
+//
+//                        // Ensure child stays within bounds after measurement
+//                        val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
+//                        val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+//
+//                        offsetX = offsetX.coerceIn(0f, maxX)
+//                        offsetY = offsetY.coerceIn(0f, maxY)
+//
+//                        onAction(
+//                            EditMemeAction.OnMemeTextPositionChange(
+//                                id = child.id,
+//                                x = offsetX,
+//                                y = offsetY
+//                            )
+//                        )
+//                    }
+//                    .pointerInput(child.id) {
+//                        detectDragGestures(
+//                            onDragEnd = {
+//                                // Update final position when drag ends
+//                                onAction(
+//                                    EditMemeAction.OnMemeTextPositionChange(
+//                                        id = child.id,
+//                                        x = offsetX,
+//                                        y = offsetY
+//                                    )
+//                                )
+//                            }
+//                        ) { change, dragAmount ->
+//                            val newX = offsetX + dragAmount.x
+//                            val newY = offsetY + dragAmount.y
+//
+//                            // Constrain to parent bounds
+//                            val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
+//                            val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+//
+//                            offsetX = newX.coerceIn(0f, maxX)
+//                            offsetY = newY.coerceIn(0f, maxY)
+//                        }
+//                    }
             ) {
                 val isSelected = textBoxInteractionState is TextBoxInteractionState.Selected
                         && textBoxInteractionState.textBoxId == child.id
                 val isEditing = textBoxInteractionState is TextBoxInteractionState.Editing
                         && textBoxInteractionState.textBoxId == child.id
+
                 MemeTextBox(
                     memeText = child,
                     modifier = Modifier,
