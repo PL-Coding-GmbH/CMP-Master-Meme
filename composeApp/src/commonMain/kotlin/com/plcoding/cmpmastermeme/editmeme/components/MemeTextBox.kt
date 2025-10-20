@@ -3,6 +3,7 @@ package com.plcoding.cmpmastermeme.editmeme.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
@@ -94,12 +95,10 @@ fun MemeTextBox(
                     } else Color.Transparent,
                     shape = RoundedCornerShape(4.dp)
                 )
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onClick() },
-                        onDoubleTap = { onDoubleClick() }
-                    )
-                }
+                .combinedClickable(
+                    onClick = onClick,
+                    onDoubleClick = onDoubleClick
+                )
         ) {
             val textPadding = 8.dp
             if (isEditing) {

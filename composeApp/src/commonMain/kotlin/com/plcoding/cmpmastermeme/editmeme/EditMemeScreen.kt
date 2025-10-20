@@ -70,6 +70,7 @@ import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.PI
 import kotlin.math.roundToInt
 
 @Composable
@@ -228,16 +229,34 @@ private fun DraggableContainer(
             }
 
             val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
-                zoom = (zoom * zoomChange).coerceIn(0.5f, 1f)
+                // 1) Update rotation
+                rotation += rotationChange
 
-                val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
-                val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
+                // 2) Rotate pan change to account for rotation
+                val angle = rotation * kotlin.math.PI.toFloat() / 180f
+                val cos = kotlin.math.cos(angle)
+                val sin = kotlin.math.sin(angle)
+
+                val rotatedPanX = panChange.x * cos - panChange.y * sin
+                val rotatedPanY = panChange.x * sin + panChange.y * cos
+
+                // 3) Update zoom
+                zoom = (zoom * zoomChange).coerceIn(0.5f, 5f)
+
+                // 4) Apply scaled pan with bounds (like your other project)
+                val scaledWidth = childWidth * zoom
+                val scaledHeight = childHeight * zoom
+
+                // Allow negative offsets when element is larger than parent
+                val minX = (parentWidth - scaledWidth).coerceAtMost(0f)
+                val maxX = (parentWidth - scaledWidth).coerceAtLeast(0f)
+                val minY = (parentHeight - scaledHeight).coerceAtMost(0f)
+                val maxY = (parentHeight - scaledHeight).coerceAtLeast(0f)
 
                 offset = Offset(
-                    x = (offset.x + zoom * panChange.x).coerceIn(0f, maxX),
-                    y = (offset.y + zoom * panChange.y).coerceIn(0f, maxY)
+                    x = (offset.x + zoom * rotatedPanX).coerceIn(minX, maxX),
+                    y = (offset.y + zoom * rotatedPanY).coerceIn(minY, maxY)
                 )
-                rotation += rotationChange
             }
 
             Box(
