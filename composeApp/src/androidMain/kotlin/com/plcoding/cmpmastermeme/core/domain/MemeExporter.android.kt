@@ -138,11 +138,18 @@ actual class MemeExporter(
             textAlign = Paint.Align.LEFT
         }
 
-        // Match editor constraint
+        // Match editor constraint exactly
         // The editor uses (displayWidth * 0.3f / zoom).dp which incorrectly treats pixels as dp
         // This gets multiplied by density during layout, so we must account for it here
+        // Then subtract the 16dp padding (8dp on each side) that's subtracted in OutlinedText
         val density = context.resources.displayMetrics.density
-        val constraintWidthBitmap = ((displayWidth * 0.3f / box.scale) * density * scaleX).toInt()
+        val paddingDp = textPaddingDp * 2  // 8dp * 2 = 16dp
+        val paddingPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            paddingDp,
+            context.resources.displayMetrics
+        )
+        val constraintWidthBitmap = ((displayWidth * 0.3f / box.scale) * density * scaleX - paddingPx * scaleX).toInt()
             .coerceAtLeast(1)
 
         // Use StaticLayout to handle text wrapping
