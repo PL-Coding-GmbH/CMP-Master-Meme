@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalForeignApi::class)
+@file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 
 package com.plcoding.cmpmastermeme.core.domain
 
@@ -13,14 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import platform.CoreGraphics.CGContextRef
-import platform.CoreGraphics.CGContextRestoreGState
-import platform.CoreGraphics.CGContextRotateCTM
-import platform.CoreGraphics.CGContextSaveGState
-import platform.CoreGraphics.CGContextScaleCTM
-import platform.CoreGraphics.CGContextTranslateCTM
-import platform.CoreGraphics.CGRectMake
-import platform.CoreGraphics.CGSizeMake
+import platform.CoreGraphics.*
 import platform.Foundation.NSData
 import platform.Foundation.NSNumber
 import platform.Foundation.NSString
@@ -200,105 +193,74 @@ actual class MemeExporter {
      * Renders a single text box with meme-style formatting (white text, black outline).
      * Applies rotation and scaling transformations around the text center.
      */
-    @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
     private fun drawTextBox(
         context: CGContextRef,
         scaledBox: ScaledTextBox
     ) {
-        // Create text attributes for measuring (use fill attributes for accurate size)
-        val fillAttributes = createTextAttributes(scaledBox.scaledFontSize, isStroke = false)
-        val strokeAttributes = createTextAttributes(
-            scaledBox.scaledFontSize,
-            isStroke = true,
-            strokeWidth = scaledBox.strokeWidth
-        )
+        val attributes = createMemeTextAttributes(scaledBox.scaledFontSize)
         val textNS = NSString.create(string = scaledBox.text)
 
-        // Calculate actual text size with wrapping using fill attributes
+        // Calculate text size
         val boundingRect = textNS.boundingRectWithSize(
             size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
-            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
-            attributes = fillAttributes,
+            options = 1L shl 0,
+            attributes = attributes,
             context = null
         )
 
         val actualTextWidth = boundingRect.useContents { size.width }
         val actualTextHeight = boundingRect.useContents { size.height }
 
-        // Calculate pivot points for rotation
+        // Get positioning from calculator
         val boxWithPivots = calculator.calculatePivotPoints(
-            scaledBox,
-            actualTextWidth.toFloat(),
-            actualTextHeight.toFloat()
+            scaledBox = scaledBox,
+            actualTextWidth = actualTextWidth.toFloat(),
+            textHeight = actualTextHeight.toFloat()
         )
-
-        // Get text drawing position (with padding)
         val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
 
-        // Save the current graphics state
+        // Apply transforms and draw
         CGContextSaveGState(context)
 
-        // Apply transformations around the pivot point
-        // 1. Translate to pivot
         CGContextTranslateCTM(
-            context,
-            boxWithPivots.pivotX.toDouble(),
-            boxWithPivots.pivotY.toDouble()
+            c = context,
+            tx = boxWithPivots.pivotX.toDouble(),
+            ty = boxWithPivots.pivotY.toDouble()
         )
-
-        // 2. Apply scale (only user-applied scale, not the font scale which is already in scaledFontSize)
-        CGContextScaleCTM(context, boxWithPivots.scale.toDouble(), boxWithPivots.scale.toDouble())
-
-        // 3. Apply rotation (convert degrees to radians)
-        val radians = boxWithPivots.rotation * PI / 180.0
-        CGContextRotateCTM(context, radians)
-
-        // 4. Translate back from pivot
+        CGContextScaleCTM(
+            c = context,
+            sx = boxWithPivots.scale.toDouble(),
+            sy = boxWithPivots.scale.toDouble()
+        )
+        CGContextRotateCTM(
+            c = context,
+            angle = boxWithPivots.rotation * PI / 180.0
+        )
         CGContextTranslateCTM(
-            context,
-            -boxWithPivots.pivotX.toDouble(),
-            -boxWithPivots.pivotY.toDouble()
+            c = context,
+            tx = -boxWithPivots.pivotX.toDouble(),
+            ty = -boxWithPivots.pivotY.toDouble()
         )
 
-        // Draw the text at the calculated position
-        val finalDrawRect = CGRectMake(
-            x = textPosition.x.toDouble(),
-            y = textPosition.y.toDouble(),
-            width = scaledBox.constraintWidth.toDouble(),
-            height = actualTextHeight
-        )
-
-        // Draw stroke first (behind fill)
         textNS.drawWithRect(
-            rect = finalDrawRect,
-            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
-            attributes = strokeAttributes,
+            rect = CGRectMake(
+                textPosition.x.toDouble(),
+                textPosition.y.toDouble(),
+                scaledBox.constraintWidth.toDouble(),
+                actualTextHeight
+            ),
+            options = 1L shl 0,
+            attributes = attributes,
             context = null
         )
 
-        // Draw fill on top
-        textNS.drawWithRect(
-            rect = finalDrawRect,
-            options = 1L shl 0, // NSStringDrawingUsesLineFragmentOrigin
-            attributes = fillAttributes,
-            context = null
-        )
-
-        // Restore the graphics state
         CGContextRestoreGState(context)
     }
 
     /**
-     * Creates iOS text styling attributes for meme text.
-     * Creates separate attributes for stroke and fill to match Android's approach.
+     * Creates meme text attributes with white fill and black outline
      */
-    private fun createTextAttributes(
-        fontSize: Float,
-        isStroke: Boolean,
-        strokeWidth: Float = 0f
-    ): Map<Any?, Any?> {
-        // Load the custom Impact font from bundle
-        // The font file is in the app bundle from Compose resources
+    private fun createMemeTextAttributes(fontSize: Float): Map<Any?, Any?> {
         val font = UIFont.fontWithName("Impact", size = fontSize.toDouble())
             ?: UIFont.boldSystemFontOfSize(fontSize.toDouble())
 
@@ -307,28 +269,12 @@ actual class MemeExporter {
             setLineBreakMode(NSLineBreakByWordWrapping)
         }
 
-        return if (isStroke) {
-            // Stroke only (positive value = hollow text)
-            // Convert actual stroke width to percentage of font size for iOS
-            val strokePercentage = if (strokeWidth > 0) {
-                (strokeWidth / fontSize * 100).toDouble().coerceIn(1.0, 10.0)
-            } else {
-                3.0 // Fallback value
-            }
-            mapOf(
-                NSFontAttributeName to font,
-                NSForegroundColorAttributeName to UIColor.clearColor(),
-                NSStrokeColorAttributeName to UIColor.blackColor,
-                NSStrokeWidthAttributeName to NSNumber(strokePercentage),
-                NSParagraphStyleAttributeName to paragraphStyle
-            )
-        } else {
-            // Fill only
-            mapOf(
-                NSFontAttributeName to font,
-                NSForegroundColorAttributeName to UIColor.whiteColor,
-                NSParagraphStyleAttributeName to paragraphStyle
-            )
-        }
+        return mapOf(
+            NSFontAttributeName to font,
+            NSForegroundColorAttributeName to UIColor.whiteColor,
+            NSStrokeColorAttributeName to UIColor.blackColor,
+            NSStrokeWidthAttributeName to NSNumber(-3.0), // Negative = fill + stroke
+            NSParagraphStyleAttributeName to paragraphStyle
+        )
     }
 }
