@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -228,6 +229,16 @@ private fun DraggableContainer(
                 mutableStateOf(0f)
             }
 
+            LaunchedEffect(offset) {
+                onAction(
+                    EditMemeAction.OnMemeTextPositionChange(
+                        id = child.id,
+                        x = offset.x,
+                        y = offset.y
+                    )
+                )
+            }
+
             val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
                 // 1) Update rotation
                 rotation += rotationChange
@@ -285,51 +296,6 @@ private fun DraggableContainer(
                         scaleY = zoom
                     }
                     .transformable(gestureState)
-
-//                    .onPlaced { coordinates ->
-//                        // Get the actual size of the child
-//                        childWidth = coordinates.size.width
-//                        childHeight = coordinates.size.height
-//
-//                        // Ensure child stays within bounds after measurement
-//                        val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
-//                        val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
-//
-//                        offsetX = offsetX.coerceIn(0f, maxX)
-//                        offsetY = offsetY.coerceIn(0f, maxY)
-//
-//                        onAction(
-//                            EditMemeAction.OnMemeTextPositionChange(
-//                                id = child.id,
-//                                x = offsetX,
-//                                y = offsetY
-//                            )
-//                        )
-//                    }
-//                    .pointerInput(child.id) {
-//                        detectDragGestures(
-//                            onDragEnd = {
-//                                // Update final position when drag ends
-//                                onAction(
-//                                    EditMemeAction.OnMemeTextPositionChange(
-//                                        id = child.id,
-//                                        x = offsetX,
-//                                        y = offsetY
-//                                    )
-//                                )
-//                            }
-//                        ) { change, dragAmount ->
-//                            val newX = offsetX + dragAmount.x
-//                            val newY = offsetY + dragAmount.y
-//
-//                            // Constrain to parent bounds
-//                            val maxX = (parentWidth - childWidth).coerceAtLeast(0).toFloat()
-//                            val maxY = (parentHeight - childHeight).coerceAtLeast(0).toFloat()
-//
-//                            offsetX = newX.coerceIn(0f, maxX)
-//                            offsetY = newY.coerceIn(0f, maxY)
-//                        }
-//                    }
             ) {
                 val isSelected = textBoxInteractionState is TextBoxInteractionState.Selected
                         && textBoxInteractionState.textBoxId == child.id
@@ -339,8 +305,8 @@ private fun DraggableContainer(
                 MemeTextBox(
                     memeText = child,
                     modifier = Modifier,
-                    maxWidth = (parentWidth * 0.3f).dp,
-                    maxHeight = (parentHeight * 0.3f).dp,
+                    maxWidth = (parentWidth * 0.3f / zoom).dp,
+                    maxHeight = (parentHeight * 0.3f / zoom).dp,
                     isSelected = isSelected,
                     isEditing = isEditing,
                     onTextInputChange = {
