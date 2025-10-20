@@ -113,11 +113,12 @@ actual class MemeExporter(
             context.resources.displayMetrics
         )
 
+        val strokeWidthDp = 3f
         val strokeWidthPx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
-            1f * bitmapScale,
+            strokeWidthDp,
             context.resources.displayMetrics
-        )
+        ) * scaleX
 
         val impactTypeface = ResourcesCompat.getFont(context, R.font.impact) ?: Typeface.DEFAULT_BOLD
 

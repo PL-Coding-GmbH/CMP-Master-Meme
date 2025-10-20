@@ -60,7 +60,7 @@ fun OutlinedTextField(
     modifier: Modifier = Modifier,
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
-    strokeWidth: Float = 8f,
+    strokeWidth: Dp = 3.dp,
     textAlign: TextAlign = TextAlign.Center,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,

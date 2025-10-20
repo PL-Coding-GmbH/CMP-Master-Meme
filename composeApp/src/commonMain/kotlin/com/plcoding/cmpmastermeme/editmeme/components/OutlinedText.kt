@@ -18,6 +18,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.plcoding.cmpmastermeme.core.designsystem.Impact
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
@@ -31,7 +32,7 @@ fun OutlinedText(
     fontFamily: FontFamily = Impact,
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
-    strokeWidth: Float = 8f,
+    strokeWidth: Dp = 3.dp,
     textAlign: TextAlign = TextAlign.Center,
     maxWidth: Dp? = null,
     maxHeight: Dp? = null
@@ -83,7 +84,7 @@ fun OutlinedText(
             textLayoutResult = textLayoutResult,
             color = strokeColor,
             drawStyle = Stroke(
-                width = strokeWidth,
+                width = strokeWidth.toPx(),
                 miter = 10f,
                 join = StrokeJoin.Round
             )
