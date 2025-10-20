@@ -25,6 +25,10 @@ import androidx.core.graphics.withTranslation
 actual class MemeExporter(
     private val context: Context
 ) {
+    private val calculator = MemeRenderCalculator(
+        density = context.resources.displayMetrics.density
+    )
+
     actual suspend fun exportMeme(
         backgroundImageBytes: ByteArray,
         textBoxes: List<MemeText>,
@@ -32,21 +36,16 @@ actual class MemeExporter(
         fileName: String,
         saveStrategy: SaveToStorageStrategy,
     ) = withContext(Dispatchers.IO) {
-
         try {
             val bitmap = BitmapFactory.decodeByteArray(backgroundImageBytes, 0, backgroundImageBytes.size)
             val outputBitmap = renderMeme(bitmap, textBoxes, canvasSize)
-
             val filePath = saveStrategy.getFilePath(fileName)
             val file = File(filePath)
-
             FileOutputStream(file).use { out ->
                 outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
-
             bitmap.recycle()
             outputBitmap.recycle()
-
             Result.success(file.absolutePath)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -62,26 +61,21 @@ actual class MemeExporter(
         val output = background.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(output)
 
-        val bitmapWidth = background.width.toFloat()
-        val bitmapHeight = background.height.toFloat()
+        // Use common calculator
+        val scaleFactors = calculator.calculateScaleFactors(
+            background.width,
+            background.height,
+            displaySize
+        )
 
-        val scaleX = if (displaySize.width > 0) bitmapWidth / displaySize.width else 1f
-        val scaleY = if (displaySize.height > 0) bitmapHeight / displaySize.height else 1f
+        val scaledBoxes = calculator.calculateScaledTextBoxes(
+            textBoxes,
+            scaleFactors,
+            displaySize.width
+        )
 
-        textBoxes.forEach { box ->
-            val scaledBox = box.copy(
-                offset = Offset(
-                    x = box.offset.x * scaleX,
-                    y = box.offset.y * scaleY
-                ),
-            )
-            drawText(
-                canvas = canvas,
-                box = scaledBox,
-                scaleX = scaleX,
-                scaleY = scaleY,
-                displayWidth = displaySize.width,
-            )
+        scaledBoxes.forEach { scaledBox ->
+            drawText(canvas, scaledBox)
         }
 
         return output
@@ -90,45 +84,14 @@ actual class MemeExporter(
 
     private fun drawText(
         canvas: Canvas,
-        box: MemeText,
-        scaleX: Float,
-        scaleY: Float,
-        displayWidth: Int,
+        scaledBox: ScaledTextBox
     ) {
-        val bitmapScale = (scaleX + scaleY) / 2f
-
-        // Convert the 8dp padding from the editor to bitmap pixels
-        val textPaddingDp = 8f
-        val textPaddingPx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            textPaddingDp,
-            context.resources.displayMetrics
-        )
-        val textPaddingBitmapX = textPaddingPx * scaleX
-        val textPaddingBitmapY = textPaddingPx * scaleY
-
-        // Font size WITHOUT box.scale - that's applied via canvas scaling
-        val textSizePx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_SP,
-            box.fontSize * bitmapScale,
-            context.resources.displayMetrics
-        )
-
-        // Stroke width should scale with density but not with bitmapScale
-        // Using a thicker stroke (3dp) to match typical meme text appearance
-        val strokeWidthDp = 3f
-        val strokeWidthPx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            strokeWidthDp,
-            context.resources.displayMetrics
-        ) * scaleX
-
         val impactTypeface = ResourcesCompat.getFont(context, R.font.impact) ?: Typeface.DEFAULT_BOLD
 
         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = strokeWidthPx
-            textSize = textSizePx
+            strokeWidth = scaledBox.strokeWidth
+            textSize = scaledBox.scaledFontSize
             typeface = impactTypeface
             color = Color.BLACK
             textAlign = Paint.Align.LEFT
@@ -136,73 +99,52 @@ actual class MemeExporter(
 
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            textSize = textSizePx
+            textSize = scaledBox.scaledFontSize
             typeface = impactTypeface
             color = Color.WHITE
             textAlign = Paint.Align.LEFT
         }
 
-        // Match editor constraint exactly
-        // The editor uses (displayWidth * 0.3f / zoom).dp which incorrectly treats pixels as dp
-        // This gets multiplied by density during layout, so we must account for it here
-        // Then subtract the 16dp padding (8dp on each side) that's subtracted in OutlinedText
-        val density = context.resources.displayMetrics.density
-        val paddingDp = textPaddingDp * 2  // 8dp * 2 = 16dp
-        val paddingPx = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            paddingDp,
-            context.resources.displayMetrics
-        )
-        val constraintWidthBitmap = ((displayWidth * 0.3f / box.scale) * density * scaleX - paddingPx * scaleX).toInt()
-            .coerceAtLeast(1)
-
-        // Use StaticLayout to handle text wrapping
         val strokeLayout = android.text.StaticLayout.Builder.obtain(
-            box.text,
+            scaledBox.text,
             0,
-            box.text.length,
+            scaledBox.text.length,
             android.text.TextPaint(strokePaint),
-            constraintWidthBitmap
+            scaledBox.constraintWidth
         )
             .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
 
         val fillLayout = android.text.StaticLayout.Builder.obtain(
-            box.text,
+            scaledBox.text,
             0,
-            box.text.length,
+            scaledBox.text.length,
             android.text.TextPaint(fillPaint),
-            constraintWidthBitmap
+            scaledBox.constraintWidth
         )
             .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
 
-        // Get ACTUAL text layout dimensions, not the constraint width
-        // strokeLayout.width returns the constraint, but actual text might be narrower
+        // Get actual text dimensions and calculate pivot points
         val actualTextWidth = (0 until strokeLayout.lineCount).maxOfOrNull { line ->
             strokeLayout.getLineWidth(line)
         } ?: strokeLayout.width.toFloat()
         val textHeight = strokeLayout.height.toFloat()
 
-        // Calculate outer box dimensions (text + padding on all sides)
-        val outerBoxWidth = actualTextWidth + textPaddingBitmapX * 2
-        val outerBoxHeight = textHeight + textPaddingBitmapY * 2
+        val boxWithPivots = calculator.calculatePivotPoints(
+            scaledBox,
+            actualTextWidth,
+            textHeight
+        )
 
-        // Pivot at the center of the OUTER BOX
-        // box.offset points to top-left of the outer box
-        val pivotX = box.offset.x + outerBoxWidth / 2f
-        val pivotY = box.offset.y + outerBoxHeight / 2f
+        val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
 
-        // Text drawing position is offset by padding from box position
-        val textTopLeftX = box.offset.x + textPaddingBitmapX
-        val textTopLeftY = box.offset.y + textPaddingBitmapY
-
-        // Apply transformations: scale -> rotate -> translate
-        canvas.withScale(box.scale, box.scale, pivotX, pivotY) {
-            canvas.withRotation(box.rotation, pivotX, pivotY) {
-                canvas.withTranslation(textTopLeftX, textTopLeftY) {
+        // Apply transformations
+        canvas.withScale(boxWithPivots.scale, boxWithPivots.scale, boxWithPivots.pivotX, boxWithPivots.pivotY) {
+            canvas.withRotation(boxWithPivots.rotation, boxWithPivots.pivotX, boxWithPivots.pivotY) {
+                canvas.withTranslation(textPosition.x, textPosition.y) {
                     strokeLayout.draw(this)
                     fillLayout.draw(this)
                 }
