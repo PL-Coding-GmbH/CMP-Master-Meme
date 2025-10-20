@@ -87,6 +87,7 @@ actual class MemeExporter(
         return output
     }
 
+
     private fun drawText(
         canvas: Canvas,
         box: MemeText,
@@ -113,6 +114,8 @@ actual class MemeExporter(
             context.resources.displayMetrics
         )
 
+        // Stroke width should scale with density but not with bitmapScale
+        // Using a thicker stroke (3dp) to match typical meme text appearance
         val strokeWidthDp = 3f
         val strokeWidthPx = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
@@ -176,12 +179,15 @@ actual class MemeExporter(
             .setIncludePad(false)
             .build()
 
-        // Get text layout dimensions
-        val textWidth = strokeLayout.width.toFloat()
+        // Get ACTUAL text layout dimensions, not the constraint width
+        // strokeLayout.width returns the constraint, but actual text might be narrower
+        val actualTextWidth = (0 until strokeLayout.lineCount).maxOfOrNull { line ->
+            strokeLayout.getLineWidth(line)
+        } ?: strokeLayout.width.toFloat()
         val textHeight = strokeLayout.height.toFloat()
 
         // Calculate outer box dimensions (text + padding on all sides)
-        val outerBoxWidth = textWidth + textPaddingBitmapX * 2
+        val outerBoxWidth = actualTextWidth + textPaddingBitmapX * 2
         val outerBoxHeight = textHeight + textPaddingBitmapY * 2
 
         // Pivot at the center of the OUTER BOX
