@@ -3,7 +3,7 @@
 package com.plcoding.cmpmastermeme.core.domain
 
 import androidx.compose.ui.unit.IntSize
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -13,7 +13,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import platform.CoreGraphics.*
+import platform.CoreGraphics.CGContextRef
+import platform.CoreGraphics.CGContextRestoreGState
+import platform.CoreGraphics.CGContextRotateCTM
+import platform.CoreGraphics.CGContextSaveGState
+import platform.CoreGraphics.CGContextScaleCTM
+import platform.CoreGraphics.CGContextTranslateCTM
+import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSData
 import platform.Foundation.NSNumber
 import platform.Foundation.NSString
@@ -50,7 +57,7 @@ actual class MemeExporter {
 
     actual suspend fun exportMeme(
         backgroundImageBytes: ByteArray,
-        textBoxes: List<MemeText>,
+        textBoxes: List<MemeElement.Text>,
         canvasSize: IntSize,
         fileName: String,
         saveStrategy: SaveToStorageStrategy
@@ -95,7 +102,7 @@ actual class MemeExporter {
      */
     @OptIn(ExperimentalForeignApi::class)
     private fun renderMeme(
-        backgroundImage: UIImage, textBoxes: List<MemeText>, canvasSize: IntSize
+        backgroundImage: UIImage, textBoxes: List<MemeElement.Text>, canvasSize: IntSize
     ): UIImage? {
         // Use the actual image size for the context, not the display size
         val imageSize = IntSize(

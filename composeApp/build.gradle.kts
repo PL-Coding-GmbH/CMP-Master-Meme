@@ -57,7 +57,8 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.compose.ui.backhandler)
-            
+            implementation(libs.bundles.coil)
+
             // Lifecycle
             implementation(libs.bundles.androidx.lifecycle)
             

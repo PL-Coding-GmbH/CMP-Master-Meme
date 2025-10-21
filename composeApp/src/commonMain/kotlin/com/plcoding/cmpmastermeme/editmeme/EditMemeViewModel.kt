@@ -4,21 +4,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.plcoding.cmpmastermeme.core.domain.CacheSaveStrategy
-import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
-import com.plcoding.cmpmastermeme.core.domain.Meme
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
-import com.plcoding.cmpmastermeme.core.domain.SaveToStorageStrategy
+import com.plcoding.cmpmastermeme.core.domain.PickedImageData
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
+import com.plcoding.cmpmastermeme.editmeme.models.Transform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,10 +62,6 @@ class EditMemeViewModel(
             )
 
             is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
-            is EditMemeAction.OnMemeTextFontSizeChange -> onTextBoxFontSizeChange(
-                textBoxId = action.id,
-                fontSize = action.fontSize
-            )
             EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
             EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
             is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
@@ -76,8 +69,18 @@ class EditMemeViewModel(
             EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
             EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
             EditMemeAction.ClearSelectedMemeText -> clearSelectedMemeText()
+            is EditMemeAction.OnPickedImage -> addImageToMeme(action.data)
             else -> Unit
         }
+    }
+
+    private fun addImageToMeme(data: PickedImageData) {
+        _state.update { it.copy(
+            memeElements = it.memeElements + MemeElement.Image(
+                id = it.memeElements.size + 1,
+                bytes = data.bytes,
+            )
+        ) }
     }
 
     private fun clearSelectedMemeText() {
@@ -87,7 +90,7 @@ class EditMemeViewModel(
     }
 
     private fun showLeaveConfirmationIfEdited() = viewModelScope.launch {
-        if (state.value.memeTexts.isEmpty()) {
+        if (state.value.memeElements.isEmpty()) {
             eventChannel.send(EditMemeEvent.ConfirmedLeaveWithoutSaving)
         } else toggleLeaveEditorConfirmation(show = true)
     }
@@ -113,7 +116,7 @@ class EditMemeViewModel(
         }
         memeExporter.exportMeme(
             backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
-            textBoxes = state.value.memeTexts,
+            textBoxes = state.value.memeElements.filterIsInstance<MemeElement.Text>(),
             canvasSize = state.value.templateSize,
             saveStrategy = get(named("cache"))
         )
@@ -145,8 +148,8 @@ class EditMemeViewModel(
     private fun onTextBoxTextChange(textBoxId: Int, text: String) {
         _state.update {
             it.copy(
-                memeTexts = it.memeTexts.map { textBox ->
-                    if (textBox.id == textBoxId) {
+                memeElements = it.memeElements.map { textBox ->
+                    if (textBox.id == textBoxId && textBox is MemeElement.Text) {
                         textBox.copy(text = text)
                     } else textBox
                 }
@@ -160,29 +163,33 @@ class EditMemeViewModel(
         rotation: Float,
         scale: Float
     ) {
-        _state.update {
-            it.copy(
-                memeTexts = it.memeTexts.map { textBox ->
-                    if (textBox.id == textBoxId) {
-                        textBox.copy(
-                            offset = offset,
-                            rotation = rotation,
-                            scale = scale
-                        )
-                    } else textBox
-                }
+        updateTransformForElement(
+            id = textBoxId,
+            transform = Transform(
+                offset = offset,
+                rotation = rotation,
+                scale = scale
             )
-        }
+        )
     }
 
-    private fun onTextBoxFontSizeChange(textBoxId: Int, fontSize: Float) {
+    private fun updateTransformForElement(id: Int, transform: Transform) {
         _state.update {
+            val currentElements = it.memeElements.toMutableList()
+            val indexOfEditedElement = currentElements.indexOfFirst { it.id == id }
+            val editedElement = currentElements[indexOfEditedElement]
+            currentElements[indexOfEditedElement] = when(editedElement) {
+                is MemeElement.Image -> MemeElement.Image(
+                    id = editedElement.id,
+                    bytes = editedElement.bytes,
+                    transform = transform
+                )
+                is MemeElement.Text -> editedElement.copy(
+                    transform = transform
+                )
+            }
             it.copy(
-                memeTexts = it.memeTexts.map { textBox ->
-                    if (textBox.id == textBoxId) {
-                        textBox.copy(fontSize = fontSize)
-                    } else textBox
-                }
+                memeElements = currentElements.toList()
             )
         }
     }
@@ -194,7 +201,10 @@ class EditMemeViewModel(
     }
 
     private fun selectTextBox(id: Int) {
-        selectedTextFontSizeCache = state.value.memeTexts.firstOrNull { it.id == id }?.fontSize
+        selectedTextFontSizeCache = state.value.memeElements
+            .filterIsInstance<MemeElement.Text>()
+            .firstOrNull { it.id == id }?.fontSize
+
         _state.update {
             it.copy(
                 textBoxInteraction = TextBoxInteractionState.Selected(id)
@@ -212,7 +222,7 @@ class EditMemeViewModel(
 
     private fun createTextBox() = viewModelScope.launch {
         val currentState = state.value
-        val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
+        val newId = currentState.memeElements.maxOfOrNull { it.id }?.inc() ?: 1
 
         // Place new text at center if template size is known, otherwise top-left
         val position = if (currentState.templateSize != IntSize.Zero) {
@@ -224,16 +234,18 @@ class EditMemeViewModel(
             Offset(50f, 50f)
         }
 
-        val newBox = MemeText(
+        val newBox = MemeElement.Text(
             id = newId,
             text = "TAP TO EDIT", // TODO string resources
-            offset = position,
+            transform = Transform(
+                offset = position
+            ),
             fontSize = 36f
         )
 
         _state.update {
             it.copy(
-                memeTexts = currentState.memeTexts + newBox,
+                memeElements = currentState.memeElements + newBox,
                 textBoxInteraction = TextBoxInteractionState.Selected(newId)
             )
         }

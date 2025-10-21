@@ -7,20 +7,18 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.util.TypedValue
-import androidx.compose.ui.geometry.Offset
-import androidx.core.content.res.ResourcesCompat
 import androidx.compose.ui.unit.IntSize
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.withRotation
+import androidx.core.graphics.withScale
+import androidx.core.graphics.withTranslation
 import com.plcoding.cmpmastermeme.R
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import androidx.core.graphics.withRotation
-import androidx.core.graphics.withScale
-import androidx.core.graphics.withTranslation
 
 actual class MemeExporter(
     private val context: Context
@@ -31,7 +29,7 @@ actual class MemeExporter(
 
     actual suspend fun exportMeme(
         backgroundImageBytes: ByteArray,
-        textBoxes: List<MemeText>,
+        textBoxes: List<MemeElement.Text>,
         canvasSize: IntSize,
         fileName: String,
         saveStrategy: SaveToStorageStrategy,
@@ -55,7 +53,7 @@ actual class MemeExporter(
 
     private fun renderMeme(
         background: Bitmap,
-        textBoxes: List<MemeText>,
+        textBoxes: List<MemeElement.Text>,
         displaySize: IntSize
     ): Bitmap {
         val output = background.copy(Bitmap.Config.ARGB_8888, true)

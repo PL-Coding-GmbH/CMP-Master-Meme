@@ -3,6 +3,7 @@ package com.plcoding.cmpmastermeme.editmeme.models
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.domain.PickedImageData
 
 sealed interface EditMemeAction {
     // Navigation & Dialog Actions
@@ -16,6 +17,8 @@ sealed interface EditMemeAction {
     data class OnShareMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
     data object OnContinueEditing : EditMemeAction
     data object ClearSelectedMemeText : EditMemeAction
+
+    data class OnPickedImage(val data: PickedImageData): EditMemeAction
 
     // Text Management Actions
     data object OnAddNewMemeTextClick : EditMemeAction
@@ -31,9 +34,6 @@ sealed interface EditMemeAction {
         val rotation: Float,
         val scale: Float
     ) : EditMemeAction
-
-    // Text Styling Actions
-    data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
 
     // Layout Actions
     data class OnContainerSizeChanged(val size: IntSize) : EditMemeAction

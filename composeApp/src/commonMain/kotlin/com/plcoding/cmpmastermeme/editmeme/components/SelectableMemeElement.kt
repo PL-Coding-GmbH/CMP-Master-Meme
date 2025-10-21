@@ -16,49 +16,33 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.Fonts
-import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 import kotlinx.coroutines.delay
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
-/**
- * A complete meme text component that handles:
- * - Visual state management (selected/editing modes)
- * - User interactions (selection, deletion)
- * - Container styling (borders, backgrounds)
- * - Focus management for editing
- *
- * Uses OutlinedText for display and OutlinedTextField for editing
- * to achieve the white-text-with-black-outline meme style.
- */
 @Composable
-fun MemeTextBox(
-    memeText: MemeElement.Text,
+fun SelectableMemeElement(
+    memeElement: MemeElement,
     isSelected: Boolean,
     isEditing: Boolean,
+    maxWidth: Dp,
+    maxHeight: Dp,
     onClick: () -> Unit,
     onDoubleClick: () -> Unit,
-    onTextInputChange: (String) -> Unit,
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
-    maxWidth: Dp,
-    maxHeight: Dp
+    content: @Composable () -> Unit,
 ) {
     val editableMemeText = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -72,7 +56,7 @@ fun MemeTextBox(
         }
     }
 
-    LaunchedEffect(isSelected, memeText.id) {
+    LaunchedEffect(isSelected, memeElement.id) {
         if (!isSelected) {
             focusManager.clearFocus()
         }
@@ -98,30 +82,7 @@ fun MemeTextBox(
                     onDoubleClick = onDoubleClick
                 )
         ) {
-            val textPadding = 8.dp
-            if (isEditing) {
-                OutlinedTextField(
-                    text = memeText.text,
-                    fontSize = memeText.fontSize,
-                    fontFamily = Fonts.Impact,
-                    onTextChange = onTextInputChange,
-                    // Accounting here for padding
-                    maxWidth = maxWidth - (textPadding * 2),
-                    maxHeight = maxHeight - (textPadding * 2),
-                    modifier = Modifier
-                        .focusRequester(editableMemeText)
-                        .padding(textPadding)
-                )
-            } else {
-                OutlinedText(
-                    text = memeText.text,
-                    fontSize = memeText.fontSize,
-                    // Accounting here for padding
-                    maxWidth = maxWidth - (textPadding * 2),
-                    maxHeight = maxHeight - (textPadding * 2),
-                    modifier = Modifier.padding(textPadding)
-                )
-            }
+            content()
         }
         if (isSelected || isEditing) {
             Box(
@@ -141,51 +102,6 @@ fun MemeTextBox(
                     modifier = Modifier.size(16.dp)
                 )
             }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun Preview() {
-    var isSelected by remember { mutableStateOf(true) }
-    var isEditing by remember { mutableStateOf(false) }
-    var text by remember { mutableStateOf("TAP TO SELECT") }
-    var placement by remember {
-        mutableStateOf(
-            Offset.Zero
-        )
-    }
-    var memeText by remember(text, placement) {
-        mutableStateOf(
-            MemeElement.Text(
-                id = 1,
-                text = text,
-            )
-        )
-    }
-
-    MasterMemeTheme {
-        Box(
-            modifier = Modifier
-                .background(Color.LightGray)
-                .size(400.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            MemeTextBox(
-                memeText = memeText,
-                isSelected = isSelected,
-                isEditing = isEditing,
-                onTextInputChange = { text = it },
-                onDelete = {
-                    isSelected = false
-                    isEditing = false
-                },
-                onClick = { isSelected = true; isEditing = false },
-                onDoubleClick = { isEditing = true; isSelected = false },
-                maxWidth = 250.dp,
-                maxHeight = 250.dp
-            )
         }
     }
 }

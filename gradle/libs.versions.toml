@@ -17,6 +17,7 @@ ksp = "2.2.20-2.0.3"
 compose-multiplatform = "1.9.0"
 compose-jetbrains = "1.9.0"
 compose-hot-reload = "1.0.0-beta08"
+coil3 = "3.3.0"
 
 # AndroidX Libraries
 androidx-activity = "1.11.0"
@@ -73,7 +74,9 @@ koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 
 # Image Loading
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3" }
+coil-mp = { module = "io.coil-kt.coil3:coil", version.ref = "coil3" }
 
 # Navigation
 jetbrains-compose-navigation = { module ="org.jetbrains.androidx.navigation:navigation-compose", version.ref ="navigation-compose" }
@@ -133,4 +136,10 @@ androidx-room = [
 compose-ui = [
     "androidx-activity-compose",
     "compose-runtime"
+]
+
+coil = [
+    "coil-compose",
+    "coil-compose-core",
+    "coil-mp"
 ]

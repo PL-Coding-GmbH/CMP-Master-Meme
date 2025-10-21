@@ -2,7 +2,7 @@ package com.plcoding.cmpmastermeme.core.domain
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 
 /**
  * Contains all calculated values needed to render a text box
@@ -19,7 +19,7 @@ data class ScaledTextBox(
     val pivotY: Float,
     val rotation: Float,
     val scale: Float,
-    val originalBox: MemeText
+    val originalBox: MemeElement.Text
 )
 
 /**
@@ -53,7 +53,7 @@ class MemeRenderCalculator(
      * Convert all text boxes with proper scaling calculations
      */
     fun calculateScaledTextBoxes(
-        textBoxes: List<MemeText>,
+        textBoxes: List<MemeElement.Text>,
         scaleFactors: ScaleFactors,
         displayWidth: Int
     ): List<ScaledTextBox> {
@@ -66,7 +66,7 @@ class MemeRenderCalculator(
      * Calculate all rendering parameters for a single text box
      */
     private fun calculateScaledTextBox(
-        box: MemeText,
+        box: MemeElement.Text,
         scaleFactors: ScaleFactors,
         displayWidth: Int
     ): ScaledTextBox {
@@ -74,8 +74,8 @@ class MemeRenderCalculator(
 
         // Scale position
         val scaledOffset = Offset(
-            x = box.offset.x * scaleX,
-            y = box.offset.y * scaleY
+            x = box.transform.offset.x * scaleX,
+            y = box.transform.offset.y * scaleY
         )
 
         // Calculate padding in bitmap coordinates
@@ -92,7 +92,7 @@ class MemeRenderCalculator(
         // Calculate constraint width (matching editor logic)
         val paddingDp = TEXT_PADDING_DP * 2  // 8dp * 2 = 16dp
         val paddingPx = paddingDp * density
-        val constraintWidth = ((displayWidth * TEXT_WIDTH_FACTOR / box.scale) * density * scaleX - paddingPx * scaleX)
+        val constraintWidth = ((displayWidth * TEXT_WIDTH_FACTOR / box.transform.scale) * density * scaleX - paddingPx * scaleX)
             .toInt()
             .coerceAtLeast(1)
 
@@ -106,8 +106,8 @@ class MemeRenderCalculator(
             textPaddingY = textPaddingBitmapY,
             pivotX = 0f,  // Calculated after text layout
             pivotY = 0f,  // Calculated after text layout
-            rotation = box.rotation,
-            scale = box.scale,
+            rotation = box.transform.rotation,
+            scale = box.transform.scale,
             originalBox = box
         )
     }

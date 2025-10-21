@@ -5,7 +5,6 @@ import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.PlatformFilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.PlatformSendableFileManager
-import com.plcoding.cmpmastermeme.core.domain.PrivateAppDirSaveStrategy
 import com.plcoding.cmpmastermeme.core.domain.SaveToStorageStrategy
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import org.koin.android.ext.koin.androidContext

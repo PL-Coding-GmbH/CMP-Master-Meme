@@ -10,11 +10,3 @@ actual class CacheSaveStrategy(
         return File(context.cacheDir, fileName).absolutePath
     }
 }
-
-actual class PrivateAppDirSaveStrategy(
-    private val context: Context
-) : SaveToStorageStrategy {
-    actual override fun getFilePath(fileName: String): FilePath {
-        return File(context.getExternalFilesDir(null), fileName).absolutePath
-    }
-}

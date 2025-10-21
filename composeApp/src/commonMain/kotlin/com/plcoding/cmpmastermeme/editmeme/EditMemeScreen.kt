@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -26,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,8 +48,10 @@ import cmpmastermeme.composeapp.generated.resources.Res
 import cmpmastermeme.composeapp.generated.resources.add_text
 import cmpmastermeme.composeapp.generated.resources.save_meme
 import cmpmastermeme.composeapp.generated.resources.title_new_meme
+import coil3.compose.AsyncImage
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.domain.rememberImagePickerLauncher
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
@@ -55,11 +59,12 @@ import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
 import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
+import com.plcoding.cmpmastermeme.editmeme.components.SelectableMemeElement
 import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.LeaveEditorConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.MemeElement
 import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -95,6 +100,12 @@ private fun EditMemeScreen(
     onAction: (EditMemeAction) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val imagePickerLauncher = rememberImagePickerLauncher { data ->
+        onAction(EditMemeAction.OnPickedImage(data))
+    }
+    LaunchedEffect(Unit) {
+        imagePickerLauncher.launch()
+    }
 
     BackHandler(
         enabled = !state.isLeavingWithoutSaving && !state.isFinalisingMeme,
@@ -117,7 +128,6 @@ private fun EditMemeScreen(
                 modifier = Modifier.padding(vertical = 8.dp),
                 onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) },
-                targetedMemeText = state.memeTexts.firstOrNull { it.id == state.textBoxInteraction.targetedTextBoxId },
             )
         }
     ) { paddingValues ->
@@ -144,7 +154,7 @@ private fun EditMemeScreen(
                     contentScale = ContentScale.FillWidth
                 )
                 DraggableContainer(
-                    children = state.memeTexts,
+                    children = state.memeElements,
                     textBoxInteractionState = state.textBoxInteraction,
                     onAction = onAction,
                     modifier = Modifier.matchParentSize()
@@ -186,7 +196,7 @@ private fun EditMemeScreen(
 @Composable
 private fun DraggableContainer(
     modifier: Modifier = Modifier,
-    children: List<MemeText>,
+    children: List<MemeElement>,
     textBoxInteractionState: TextBoxInteractionState,
     onAction: (EditMemeAction) -> Unit
 ) {
@@ -204,7 +214,7 @@ private fun DraggableContainer(
                 mutableStateOf(1f)
             }
             var offset by remember {
-                mutableStateOf(Offset(child.offset.x, child.offset.y))
+                mutableStateOf(Offset(child.transform.offset.x, child.transform.offset.y))
             }
             var rotation by remember {
                 mutableStateOf(0f)
@@ -277,30 +287,42 @@ private fun DraggableContainer(
                     }
                     .transformable(gestureState)
             ) {
-                val isSelected = textBoxInteractionState is TextBoxInteractionState.Selected
-                        && textBoxInteractionState.textBoxId == child.id
-                val isEditing = textBoxInteractionState is TextBoxInteractionState.Editing
-                        && textBoxInteractionState.textBoxId == child.id
-
-                MemeTextBox(
-                    memeText = child,
-                    modifier = Modifier,
-                    maxWidth = (parentWidth * 0.3f / zoom).dp,
-                    maxHeight = (parentHeight * 0.3f / zoom).dp,
-                    isSelected = isSelected,
-                    isEditing = isEditing,
-                    onTextInputChange = {
-                        onAction(
-                            EditMemeAction.OnMemeTextChange(
-                                id = child.id,
-                                text = it
-                            )
+                when(child) {
+                    is MemeElement.Image -> {
+                        AsyncImage(
+                            model = child.bytes,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(100.dp),
                         )
-                    },
-                    onDelete = { onAction(EditMemeAction.OnDeleteMemeText(child.id)) },
-                    onClick = { onAction(EditMemeAction.OnSelectMemeText(child.id)) },
-                    onDoubleClick = { onAction(EditMemeAction.OnEditMemeText(child.id)) }
-                )
+                    }
+                    is MemeElement.Text -> {
+                        val isSelected = textBoxInteractionState is TextBoxInteractionState.Selected
+                                && textBoxInteractionState.textBoxId == child.id
+                        val isEditing = textBoxInteractionState is TextBoxInteractionState.Editing
+                                && textBoxInteractionState.textBoxId == child.id
+
+                        MemeTextBox(
+                            memeText = child,
+                            modifier = Modifier,
+                            maxWidth = (parentWidth * 0.3f / zoom).dp,
+                            maxHeight = (parentHeight * 0.3f / zoom).dp,
+                            isSelected = isSelected,
+                            isEditing = isEditing,
+                            onTextInputChange = {
+                                onAction(
+                                    EditMemeAction.OnMemeTextChange(
+                                        id = child.id,
+                                        text = it
+                                    )
+                                )
+                            },
+                            onDelete = { onAction(EditMemeAction.OnDeleteMemeText(child.id)) },
+                            onClick = { onAction(EditMemeAction.OnSelectMemeText(child.id)) },
+                            onDoubleClick = { onAction(EditMemeAction.OnEditMemeText(child.id)) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -338,37 +360,24 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     modifier: Modifier = Modifier,
-    targetedMemeText: MemeText?,
     onAddTextClick: () -> Unit,
     onSaveMemeClick: () -> Unit,
 ) {
-    if (targetedMemeText == null) {
-        Row(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
-        ) {
-            MemeSecondaryButton(
-                text = Res.string.add_text.asString(),
-                onClick = onAddTextClick
-            )
-            MemePrimaryButton(
-                text = Res.string.save_meme.asString(),
-                onClick = onSaveMemeClick
-            )
-        }
-    } else {
-        Row(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-
-        }
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
+    ) {
+        MemeSecondaryButton(
+            text = Res.string.add_text.asString(),
+            onClick = onAddTextClick
+        )
+        MemePrimaryButton(
+            text = Res.string.save_meme.asString(),
+            onClick = onSaveMemeClick
+        )
     }
 }
 
@@ -381,16 +390,11 @@ private fun Preview() {
             onAction = {},
             state = EditMemeState(
                 textBoxInteraction = TextBoxInteractionState.Selected(0),
-                memeTexts = listOf(
-                    MemeText(
+                memeElements = listOf(
+                    MemeElement.Text(
                         id = 0,
                         text = "Text #1",
-                        offset = Offset(100f, 200f)
                     ),
-                    MemeText(
-                        id = 1,
-                        text = "Text #2",
-                    )
                 )
             )
         )
