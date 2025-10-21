@@ -8,21 +8,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetProperties
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -39,35 +34,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
-fun TemplateListSheetRoot(
-    sheetState: SheetState,
-    onDismiss: () -> Unit,
-    memeTemplates: List<MemeTemplate>,
-    onMemeTemplateSelected: (MemeTemplate) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ModalBottomSheet(
-        modifier = modifier,
-        onDismissRequest = { onDismiss() },
-        sheetState = sheetState,
-        // we want the list to go behind the system navigation bar
-        contentWindowInsets = { WindowInsets() },
-        dragHandle = {
-            BottomSheetDefaults.DragHandle()
-        },
-        properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = true
-        )
-    ) {
-        MemeTemplateListContent(
-            memeTemplates = memeTemplates,
-            onMemeTemplateSelected = onMemeTemplateSelected
-        )
-    }
-}
-
-@Composable
-private fun MemeTemplateListContent(
+fun MemeTemplateListContent(
     memeTemplates: List<MemeTemplate>,
     onMemeTemplateSelected: (MemeTemplate) -> Unit,
     modifier: Modifier = Modifier

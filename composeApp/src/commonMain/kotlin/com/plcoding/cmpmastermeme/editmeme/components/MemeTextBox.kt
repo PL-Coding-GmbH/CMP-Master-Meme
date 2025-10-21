@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -28,12 +27,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.plcoding.cmpmastermeme.core.designsystem.Impact
+import com.plcoding.cmpmastermeme.core.designsystem.Fonts
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import kotlinx.coroutines.delay
@@ -105,7 +103,7 @@ fun MemeTextBox(
                 OutlinedTextField(
                     text = memeText.text,
                     fontSize = memeText.fontSize,
-                    fontFamily = Impact,
+                    fontFamily = Fonts.Impact,
                     onTextChange = onTextInputChange,
                     // Accounting here for padding
                     maxWidth = maxWidth - (textPadding * 2),

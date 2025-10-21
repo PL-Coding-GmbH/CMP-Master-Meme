@@ -34,8 +34,6 @@ sealed interface EditMemeAction {
 
     // Text Styling Actions
     data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
-    data object OnCancelFontResize : EditMemeAction
-    data object OnConfirmMemeFontTextResize : EditMemeAction
 
     // Layout Actions
     data class OnContainerSizeChanged(val size: IntSize) : EditMemeAction

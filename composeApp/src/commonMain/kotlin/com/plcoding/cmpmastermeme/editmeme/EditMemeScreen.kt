@@ -16,20 +16,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +50,6 @@ import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
-import com.plcoding.cmpmastermeme.editmeme.components.FontSlider
 import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
@@ -122,17 +117,7 @@ private fun EditMemeScreen(
                 modifier = Modifier.padding(vertical = 8.dp),
                 onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) },
-                onCancelFontResize = { onAction(EditMemeAction.OnCancelFontResize) },
-                onConfirmFontResize = { onAction(EditMemeAction.OnConfirmMemeFontTextResize)},
                 targetedMemeText = state.memeTexts.firstOrNull { it.id == state.textBoxInteraction.targetedTextBoxId },
-                onFontValueChange = { id, newFontSize ->
-                    onAction(
-                        EditMemeAction.OnMemeTextFontSizeChange(
-                            id = id,
-                            fontSize = newFontSize
-                        )
-                    )
-                }
             )
         }
     ) { paddingValues ->
@@ -354,11 +339,8 @@ private fun TopBar(
 private fun BottomBar(
     modifier: Modifier = Modifier,
     targetedMemeText: MemeText?,
-    onFontValueChange: (id: Int, fontSize: Float) -> Unit,
     onAddTextClick: () -> Unit,
     onSaveMemeClick: () -> Unit,
-    onCancelFontResize: () -> Unit,
-    onConfirmFontResize: () -> Unit,
 ) {
     if (targetedMemeText == null) {
         Row(
@@ -385,39 +367,7 @@ private fun BottomBar(
                 .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            IconButton(
-                onClick = { onCancelFontResize() },
-                colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.secondary,
-                ),
-                enabled = true,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = null,
-                )
-            }
-            FontSlider(
-                value = targetedMemeText.fontSize,
-                onValueChange = { newFontSize ->
-                    onFontValueChange(targetedMemeText.id, newFontSize)
-                },
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(
-                onClick = { onConfirmFontResize() },
-                colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.secondary,
-                ),
-                enabled = true,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                )
-            }
+
         }
     }
 }

@@ -4,11 +4,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.plcoding.cmpmastermeme.core.domain.CacheSaveStrategy
 import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
 import com.plcoding.cmpmastermeme.core.domain.Meme
-import com.plcoding.cmpmastermeme.core.domain.MemeDataSource
 import com.plcoding.cmpmastermeme.core.domain.MemeExporter
 import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.domain.SaveToStorageStrategy
 import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
@@ -17,6 +18,7 @@ import com.plcoding.cmpmastermeme.editmeme.models.MemeText
 import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,14 +34,9 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.qualifier.named
 
-const val MIN_TEXT_FONT_SIZE = 12f
-const val MAX_TEXT_FONT_SIZE = 72f
-
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val sendableFileManager: SendableFileManager,
-    private val memeDataSource: MemeDataSource,
-    private val filePathResolver: FilePathResolver
 ) : ViewModel(), KoinComponent {
 
     private val _state = MutableStateFlow(EditMemeState())
@@ -53,8 +50,6 @@ class EditMemeViewModel(
     fun onAction(action: EditMemeAction) {
         when (action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
-            is EditMemeAction.OnSaveMemeClick -> saveMeme(action.memeTemplate)
-            is EditMemeAction.OnDeleteMemeText -> removeTextBox(action.id)
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
             is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
@@ -80,33 +75,15 @@ class EditMemeViewModel(
             EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
             EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
             EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
-            EditMemeAction.OnCancelFontResize -> resetSelectedMemeFontText()
-            EditMemeAction.OnConfirmMemeFontTextResize,
-            EditMemeAction.ClearSelectedMemeText -> confirmFontSelection()
+            EditMemeAction.ClearSelectedMemeText -> clearSelectedMemeText()
+            else -> Unit
         }
     }
 
-    private fun confirmFontSelection() {
-        _state.update {
-            it.copy(
-                textBoxInteraction = TextBoxInteractionState.None
-            )
-        }
-    }
-
-    private fun resetSelectedMemeFontText() {
-        val targetMemeText = state.value.memeTexts.firstOrNull { it.id == state.value.textBoxInteraction.targetedTextBoxId }
-        if (targetMemeText == null) return
-        _state.update {
-            it.copy(
-                memeTexts = state.value.memeTexts.map { text ->
-                    if (text.id == state.value.textBoxInteraction.targetedTextBoxId)  {
-                        text.copy(fontSize = selectedTextFontSizeCache ?: (MAX_TEXT_FONT_SIZE / 2))
-                    } else text
-                },
-                textBoxInteraction = TextBoxInteractionState.None
-            )
-        }
+    private fun clearSelectedMemeText() {
+        _state.update { it.copy(
+            textBoxInteraction = TextBoxInteractionState.None
+        ) }
     }
 
     private fun showLeaveConfirmationIfEdited() = viewModelScope.launch {
@@ -152,32 +129,6 @@ class EditMemeViewModel(
         _state.update {
             it.copy(isFinalisingMeme = isFinalising)
         }
-    }
-
-    private fun saveMeme(memeTemplate: MemeTemplate) = viewModelScope.launch {
-        _state.update {
-            it.copy(isFinalisingMeme = false)
-        }
-
-        memeExporter.exportMeme(
-            backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
-            textBoxes = state.value.memeTexts,
-            canvasSize = state.value.templateSize,
-            saveStrategy = get(named("private_dir"))
-        )
-            .onSuccess { filePath ->
-                /*
-                    Store only the filename, not the full path
-                    Used to store full path, but iOS apps run in a sandbox where the absolute path changes between app launches
-                    So yeah, we need a path resolver
-                 */
-                val fileName = filePathResolver.extractFileName(filePath)
-                memeDataSource.save(Meme(imageUri = fileName))
-                eventChannel.send(EditMemeEvent.SavedMeme)
-            }
-            .onFailure {
-                // TODO show toast
-            }
     }
 
     /*
@@ -259,14 +210,6 @@ class EditMemeViewModel(
         }
     }
 
-    private fun removeTextBox(id: Int) {
-        _state.update {
-            it.copy(
-                memeTexts = it.memeTexts.filter { it.id != id }
-            )
-        }
-    }
-
     private fun createTextBox() = viewModelScope.launch {
         val currentState = state.value
         val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
@@ -285,7 +228,7 @@ class EditMemeViewModel(
             id = newId,
             text = "TAP TO EDIT", // TODO string resources
             offset = position,
-            fontSize = MAX_TEXT_FONT_SIZE / 2
+            fontSize = 36f
         )
 
         _state.update {

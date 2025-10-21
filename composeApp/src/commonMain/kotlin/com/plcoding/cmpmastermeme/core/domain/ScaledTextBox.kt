@@ -26,7 +26,7 @@ data class ScaledTextBox(
  * Common calculation logic for meme rendering across platforms
  */
 class MemeRenderCalculator(
-    private val density: Float  // Pass from platform (Android: displayMetrics.density, iOS: UIScreen scale)
+    private val density: Float
 ) {
     companion object {
         private const val TEXT_PADDING_DP = 8f

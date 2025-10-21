@@ -7,7 +7,3 @@ interface SaveToStorageStrategy {
 expect class CacheSaveStrategy : SaveToStorageStrategy {
     override fun getFilePath(fileName: String): FilePath
 }
-
-expect class PrivateAppDirSaveStrategy : SaveToStorageStrategy {
-    override fun getFilePath(fileName: String): FilePath
-}

@@ -13,15 +13,3 @@ actual class CacheSaveStrategy : SaveToStorageStrategy {
         return "$cacheDirectory/$fileName"
     }
 }
-
-actual class PrivateAppDirSaveStrategy : SaveToStorageStrategy {
-    actual override fun getFilePath(fileName: String): FilePath {
-        val documentsDirectory = NSSearchPathForDirectoriesInDomains(
-            NSDocumentDirectory,
-            NSUserDomainMask,
-            true
-        ).firstOrNull() as? String ?: throw IllegalStateException("Could not find documents directory")
-        
-        return "$documentsDirectory/$fileName"
-    }
-}

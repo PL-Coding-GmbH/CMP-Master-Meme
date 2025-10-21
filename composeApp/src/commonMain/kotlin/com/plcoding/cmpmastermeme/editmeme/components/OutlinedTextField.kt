@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.plcoding.cmpmastermeme.core.designsystem.Impact
+import com.plcoding.cmpmastermeme.core.designsystem.Fonts
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -125,7 +125,6 @@ fun OutlinedTextField(
         cursorBrush = SolidColor(Color.White),
         keyboardOptions = keyboardOptions.copy(
             capitalization = KeyboardCapitalization.Characters,
-            imeAction = ImeAction.Done
         ),
         keyboardActions = keyboardActions,
         singleLine = false,
@@ -158,7 +157,7 @@ private fun Preview() {
         OutlinedTextField(
             text = editableText,
             fontSize = 36f,
-            fontFamily = Impact,
+            fontFamily = Fonts.Impact,
             onTextChange = { editableText = it },
             modifier = Modifier.padding(8.dp)
         )

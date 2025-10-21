@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.plcoding.cmpmastermeme.core.designsystem.Impact
+import com.plcoding.cmpmastermeme.core.designsystem.Fonts
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -29,7 +29,7 @@ fun OutlinedText(
     text: String,
     fontSize: Float,
     modifier: Modifier = Modifier,
-    fontFamily: FontFamily = Impact,
+    fontFamily: FontFamily = Fonts.Impact,
     fillColor: Color = Color.White,
     strokeColor: Color = Color.Black,
     strokeWidth: Dp = 3.dp,
@@ -106,7 +106,7 @@ private fun Preview() {
         OutlinedText(
             text = "TAP TWICE TO EDIT",
             fontSize = 36f,
-            fontFamily = Impact,
+            fontFamily = Fonts.Impact,
             fillColor = Color.White,
             strokeColor = Color.Black,
             modifier = Modifier

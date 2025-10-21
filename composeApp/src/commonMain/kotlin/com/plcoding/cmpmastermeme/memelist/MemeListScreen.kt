@@ -72,15 +72,6 @@ fun MemeListScreenRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    ObserveAsEvents(viewModel.events) { event ->
-        when(event) {
-            MemeListEvent.MemeDeleted -> scope.launch {
-                snackbarHostState.showSnackbar(message = getString(Res.string.delete_meme_success))
-            }
-        }
-    }
 
     MemeListScreen(
         state = state,
@@ -101,11 +92,6 @@ private fun MemeListScreen(
     snackbarHostState: SnackbarHostState,
     onAction: (MemeListAction) -> Unit
 ) {
-
-    val scope = rememberCoroutineScope()
-    val templateShareSheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    val actionItemsShareSheet = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -123,165 +109,15 @@ private fun MemeListScreen(
                 ),
             )
         },
-        floatingActionButton = {
-            MemeFloatingActionButton(
-                onClick = { onAction(MemeListAction.OnCreateNewMeme) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = Color.Black,
-                )
-            }
-        }
     ) { innerPadding ->
-        Box(
+        MemeTemplateListContent(
+            memeTemplates = state.templates,
+            onMemeTemplateSelected = {
+                onAction(MemeListAction.OnTemplateSelected(it))
+            },
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-
-            when {
-                state.memes.isEmpty() -> CreateFirstMemeNotice()
-                else -> ListOfMemes(
-                    memes = state.memes,
-                    onMemeClick = { onAction(MemeListAction.OnSelectMeme(it)) }
-                )
-            }
-        }
-
-        // Conditional UI
-
-        state.memeBeingDeleted?.let {
-            DeleteMemeConfirmationDialog(
-                onDismiss = { onAction(MemeListAction.CancelMemeDeletion) },
-                onConfirmDelete = { onAction(MemeListAction.OnConfirmDeleteMeme(it)) }
-            )
-        }
-
-        if (state.isCreatingNewMeme) {
-            TemplateListSheetRoot(
-                sheetState = templateShareSheet,
-                onMemeTemplateSelected = { template ->
-                    scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                        onAction(MemeListAction.OnTemplateSelected(template))
-                        onAction(MemeListAction.OnHideTemplateOptions)
-                    }
-                },
-                onDismiss = {
-                    scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                        onAction(MemeListAction.OnHideTemplateOptions)
-                    }
-                },
-                memeTemplates = state.templates
-            )
-        }
-
-        state.selectedMeme?.let { selectedMeme ->
-            SaveMemeContextSheetRoot(
-                sheetState = actionItemsShareSheet,
-                availableActions = listOf(
-                    MemeUiAction.Share(
-                        onClick = {
-                            scope.launch { templateShareSheet.hide() }.invokeOnCompletion {
-                                onAction(MemeListAction.OnShareMemeClick(uri = selectedMeme.imageUri))
-                                onAction(MemeListAction.OnClearMemeSelection)
-                            }
-                        }
-                    ),
-                    MemeUiAction.Delete(
-                        onClick = { onAction(MemeListAction.OnDeleteMemeClick(selectedMeme)) }
-                    )
-                ),
-                onDismiss = {
-                    scope.launch { actionItemsShareSheet.hide() }.invokeOnCompletion {
-                        onAction(MemeListAction.OnClearMemeSelection)
-                    }
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CreateFirstMemeNotice() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(Res.drawable.empty_meme),
-            contentDescription = null
+                .fillMaxSize()
         )
-        Text(
-            text = stringResource(Res.string.meme_empty_list),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.outline,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
-
-@Composable
-private fun ListOfMemes(
-    memes: List<MemeUi>,
-    onMemeClick: (MemeUi) -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LazyVerticalGrid(
-            modifier = Modifier.fillMaxSize(),
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                start = 8.dp,
-                end = 8.dp,
-                top = 8.dp,
-                bottom = 80.dp
-            )
-        ) {
-            items(
-                items = memes,
-                key = { meme -> meme.imageUri }
-            ) { meme ->
-                Card(
-                    modifier = Modifier.aspectRatio(1f),
-                    onClick = { onMemeClick(meme) },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    AsyncImage(
-                        model = meme.imageUri,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        }
-
-        BottomGradient()
-    }
-}
-
-@Composable
-private fun MemeFloatingActionButton(
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                brush = MaterialTheme.colorScheme.extended.buttonGradient
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        content()
     }
 }
 
