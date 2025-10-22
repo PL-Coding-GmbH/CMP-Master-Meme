@@ -38,7 +38,7 @@ actual class MemeExporter(
         textBoxes: List<MemeText>,
         canvasSize: IntSize,
         fileName: String,
-        saveStrategy: SaveToStorageStrategy,
+        saveStrategy: SaveStrategy,
     ) = withContext(Dispatchers.IO) {
         try {
             val bitmap =
@@ -117,7 +117,7 @@ actual class MemeExporter(
             TextPaint(strokePaint),
             scaledBox.constraintWidth
         )
-            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
             .setIncludePad(false)
             .build()
 
@@ -128,11 +128,11 @@ actual class MemeExporter(
             TextPaint(fillPaint),
             scaledBox.constraintWidth
         )
-            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
             .setIncludePad(false)
             .build()
 
-        // Get actual text dimensions and calculate pivot points
+        // Get actual text dimensions
         val actualTextWidth = (0 until strokeLayout.lineCount).maxOfOrNull { line ->
             strokeLayout.getLineWidth(line)
         } ?: strokeLayout.width.toFloat()
