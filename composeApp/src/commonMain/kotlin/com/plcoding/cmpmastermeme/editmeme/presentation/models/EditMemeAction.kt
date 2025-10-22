@@ -11,10 +11,7 @@ sealed interface EditMemeAction {
     data object OnCancelLeaveWithoutSaving : EditMemeAction
 
     // Meme Completion Actions
-    data object OnCompleteEditingClick : EditMemeAction
     data class OnSaveMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
-    data class OnShareMemeClick(val memeTemplate: MemeTemplate) : EditMemeAction
-    data object OnContinueEditing : EditMemeAction
     data object ClearSelectedMemeText : EditMemeAction
 
     // Text Management Actions

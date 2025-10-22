@@ -46,6 +46,7 @@ class EditMemeViewModel(
         when (action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
+            is EditMemeAction.OnSaveMemeClick -> shareMeme(action.memeTemplate)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
             is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
                 textBoxId = action.id,
@@ -64,9 +65,6 @@ class EditMemeViewModel(
                 textBoxId = action.id,
                 fontSize = action.fontSize
             )
-            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
-            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
-            is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
             EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
             EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
             EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
@@ -103,9 +101,6 @@ class EditMemeViewModel(
     }
 
     private fun shareMeme(memeTemplate: MemeTemplate) = viewModelScope.launch {
-        _state.update {
-            it.copy(isFinalisingMeme = false)
-        }
         memeExporter.exportMeme(
             backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
             textBoxes = state.value.memeTexts,
@@ -118,12 +113,6 @@ class EditMemeViewModel(
             .onFailure {
                 // TODO show failure toast
             }
-    }
-
-    private fun toggleIsFinalisingMeme(isFinalising: Boolean) {
-        _state.update {
-            it.copy(isFinalisingMeme = isFinalising)
-        }
     }
 
     /*

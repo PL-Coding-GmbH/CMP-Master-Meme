@@ -6,7 +6,6 @@ data class EditMemeState(
     val templateSize: IntSize = IntSize.Zero,
     val memeTexts: List<MemeText> = emptyList(),
     val textBoxInteraction: TextBoxInteractionState = TextBoxInteractionState.None,
-    val isFinalisingMeme: Boolean = false,
     val isLeavingWithoutSaving: Boolean = false
 )
 
