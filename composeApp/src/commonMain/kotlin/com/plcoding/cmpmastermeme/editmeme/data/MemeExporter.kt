@@ -12,6 +12,6 @@ expect class MemeExporter {
         textBoxes: List<MemeText>,
         canvasSize: IntSize,
         fileName: String = "meme_${Clock.System.now().toEpochMilliseconds()}.png",
-        saveStrategy: SaveToStorageStrategy
+        saveStrategy: SaveStrategy
     ): Result<FilePath>
 }

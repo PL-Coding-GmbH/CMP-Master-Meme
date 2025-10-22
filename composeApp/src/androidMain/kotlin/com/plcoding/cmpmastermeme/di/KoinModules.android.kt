@@ -7,15 +7,14 @@ import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
 import com.plcoding.cmpmastermeme.editmeme.data.CacheSaveStrategy
 import com.plcoding.cmpmastermeme.editmeme.domain.SaveToStorageStrategy
 import org.koin.android.ext.koin.androidContext
-import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 actual val coreDataPlatformModule = module {
     single { MemeExporter(androidContext()) }
-    factory(named("cache")) {
+    factory {
         CacheSaveStrategy(context = androidContext())
-    }.bind<SaveToStorageStrategy>()
+    }.bind<SaveStrategy>()
 
     factory {
         ShareSheetManager(context = androidContext())

@@ -7,7 +7,7 @@ import java.io.File
 
 actual class CacheSaveStrategy(
     private val context: Context
-) : SaveToStorageStrategy {
+) : SaveStrategy {
     actual override fun getFilePath(fileName: String): FilePath {
         return File(context.cacheDir, fileName).absolutePath
     }

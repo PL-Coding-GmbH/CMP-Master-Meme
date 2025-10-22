@@ -12,6 +12,15 @@ import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState
 import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
+import com.plcoding.cmpmastermeme.core.domain.MemeExporter
+import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.domain.SaveStrategy
+import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
+import com.plcoding.cmpmastermeme.editmeme.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
@@ -25,14 +34,12 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.qualifier.named
 
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val shareSheetManager: ShareSheetManager,
-) : ViewModel(), KoinComponent {
+    private val saveStrategy: SaveStrategy
+) : ViewModel() {
 
     private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
@@ -105,7 +112,7 @@ class EditMemeViewModel(
             backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
             textBoxes = state.value.memeTexts,
             canvasSize = state.value.templateSize,
-            saveStrategy = get(named("cache"))
+            saveStrategy = saveStrategy
         )
             .onSuccess {
                 shareSheetManager.shareFile(it, "image/jpeg")

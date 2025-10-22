@@ -12,14 +12,7 @@ import org.koin.dsl.module
 
 actual val coreDataPlatformModule = module {
     singleOf(::MemeExporter)
-    factory {
-        CacheSaveStrategy()
-    }.bind<SaveToStorageStrategy>()
-
-    factory {
-        ShareSheetManager()
-    }.bind<ShareSheetManager>()
-    single {
-        PlatformFilePathResolver()
-    }.bind<FilePathResolver>()
+    singleOf(::PlatformFilePathResolver).bind<FilePathResolver>()
+    factoryOf(::CacheSaveStrategy).bind<SaveStrategy>()
+    factoryOf(::ShareSheetManager)
 }
