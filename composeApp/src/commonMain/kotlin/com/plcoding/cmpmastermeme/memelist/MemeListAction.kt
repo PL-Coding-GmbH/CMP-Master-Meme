@@ -1,9 +1,7 @@
 package com.plcoding.cmpmastermeme.memelist
 
-import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 
 sealed interface MemeListAction {
     data class OnTemplateSelected(val template: MemeTemplate) : MemeListAction
-
-    data class OnSelectMeme(val meme: MemeUi) : MemeListAction
 }

@@ -6,7 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import com.plcoding.cmpmastermeme.editmeme.EditMemeScreenRoot
 import com.plcoding.cmpmastermeme.memelist.MemeListScreenRoot
 import kotlinx.serialization.Serializable

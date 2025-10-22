@@ -1,0 +1,426 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
+package com.plcoding.cmpmastermeme.editmeme.presentation
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cmpmastermeme.composeapp.generated.resources.Res
+import cmpmastermeme.composeapp.generated.resources.add_text
+import cmpmastermeme.composeapp.generated.resources.save_meme
+import cmpmastermeme.composeapp.generated.resources.title_new_meme
+import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
+import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
+import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.components.MemePrimaryButton
+import com.plcoding.cmpmastermeme.editmeme.components.MemeSecondaryButton
+import com.plcoding.cmpmastermeme.editmeme.components.MemeTextBox
+import com.plcoding.cmpmastermeme.editmeme.components.MemeUiAction
+import com.plcoding.cmpmastermeme.editmeme.components.SaveMemeContextSheetRoot
+import com.plcoding.cmpmastermeme.editmeme.components.confirmationdialog.LeaveEditorConfirmationDialog
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
+import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
+import org.jetbrains.compose.resources.imageResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.viewmodel.koinViewModel
+
+@Composable
+fun EditMemeScreenRoot(
+    template: MemeTemplate,
+    navigateBack: () -> Unit,
+    viewModel: EditMemeViewModel = koinViewModel()
+) {
+
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent.SavedMeme,
+            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent.ConfirmedLeaveWithoutSaving -> navigateBack()
+        }
+    }
+
+    EditMemeScreen(
+        template = template,
+        state = state,
+        onAction = viewModel::onAction
+    )
+}
+
+@Composable
+private fun EditMemeScreen(
+    state: com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState,
+    template: MemeTemplate,
+    onAction: (com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
+    BackHandler(
+        enabled = !state.isLeavingWithoutSaving && !state.isFinalisingMeme,
+        onBack = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnGoBackClick) }
+    )
+
+    Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onTap = {
+                    onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.ClearSelectedMemeText)
+                }
+            )
+        },
+        topBar = {
+            TopBar(onGoBackClick = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnGoBackClick) })
+        },
+        bottomBar = {
+            BottomBar(
+                modifier = Modifier.padding(vertical = 8.dp),
+                onSaveMemeClick = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnCompleteEditingClick) },
+                onAddTextClick = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnAddNewMemeTextClick) },
+                targetedMemeText = state.memeTexts.firstOrNull { it.id == state.textBoxInteraction.targetedTextBoxId },
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box {
+                Image(
+                    bitmap = imageResource(template.drawableResource),
+                    contentDescription = template.id,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPlaced { layoutCoordinates ->
+                            val size = layoutCoordinates.size
+                            onAction(
+                                _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnContainerSizeChanged(
+                                    IntSize(size.width, size.height)
+                                )
+                            )
+                        },
+                    contentScale = ContentScale.FillWidth
+                )
+                DraggableContainer(
+                    children = state.memeTexts,
+                    textBoxInteractionState = state.textBoxInteraction,
+                    onAction = onAction,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        }
+    }
+
+    // Conditional UI
+    if (state.isFinalisingMeme) {
+        _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.SaveMemeContextSheetRoot(
+            availableActions = listOf(
+                _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeUiAction.Save(
+                    onClick = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnSaveMemeClick(
+                                memeTemplate = template
+                            )
+                        )
+                    }
+                ),
+                _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeUiAction.Share(
+                    onClick = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnShareMemeClick(
+                                memeTemplate = template
+                            )
+                        )
+                    }
+                )
+            ),
+            onDismiss = {
+                onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnContinueEditing)
+            },
+            sheetState = sheetState,
+        )
+    }
+
+    if (state.isLeavingWithoutSaving) {
+        _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.confirmationdialog.LeaveEditorConfirmationDialog(
+            onDismiss = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnCancelLeaveWithoutSaving) },
+            onConfirmLeave = { onAction(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnConfirmLeaveWithoutSaving) }
+        )
+    }
+}
+
+@Composable
+private fun DraggableContainer(
+    modifier: Modifier = Modifier,
+    children: List<MemeText>,
+    textBoxInteractionState: com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState,
+    onAction: (com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction) -> Unit
+) {
+    BoxWithConstraints(
+        modifier = modifier
+    ) {
+        val parentWidth = constraints.maxWidth
+        val parentHeight = constraints.maxHeight
+
+        children.forEach { child ->
+            var childWidth by remember { mutableStateOf(0) }
+            var childHeight by remember { mutableStateOf(0) }
+
+            var zoom by remember {
+                mutableStateOf(1f)
+            }
+            var offset by remember {
+                mutableStateOf(Offset(child.offset.x, child.offset.y))
+            }
+            var rotation by remember {
+                mutableStateOf(0f)
+            }
+
+            val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
+                // 1) Update rotation
+                rotation += rotationChange
+
+                // 2) Rotate pan change to account for rotation
+                val angle = rotation * kotlin.math.PI.toFloat() / 180f
+                val cos = kotlin.math.cos(angle)
+                val sin = kotlin.math.sin(angle)
+
+                val rotatedPanX = panChange.x * cos - panChange.y * sin
+                val rotatedPanY = panChange.x * sin + panChange.y * cos
+
+                // 3) Update zoom
+                zoom = (zoom * zoomChange).coerceIn(0.5f, 5f)
+
+                // 4) Calculate the axis-aligned bounding box of the rotated element
+                val scaledWidth = childWidth * zoom
+                val scaledHeight = childHeight * zoom
+
+                // Visual bounds after rotation (absolute values since rotation can be any angle)
+                val visualWidth = kotlin.math.abs(scaledWidth * cos) + kotlin.math.abs(scaledHeight * sin)
+                val visualHeight = kotlin.math.abs(scaledWidth * sin) + kotlin.math.abs(scaledHeight * cos)
+
+                // Offset from layout center to visual center due to scaling
+                val scaleOffsetX = (scaledWidth - childWidth) / 2
+                val scaleOffsetY = (scaledHeight - childHeight) / 2
+
+                // Additional offset due to rotation changing the bounding box
+                val rotationOffsetX = (visualWidth - scaledWidth) / 2
+                val rotationOffsetY = (visualHeight - scaledHeight) / 2
+
+                // Total visual extent
+                val minX = scaleOffsetX + rotationOffsetX
+                val maxX = parentWidth - childWidth - scaleOffsetX - rotationOffsetX
+                val minY = scaleOffsetY + rotationOffsetY
+                val maxY = parentHeight - childHeight - scaleOffsetY - rotationOffsetY
+
+                offset = Offset(
+                    x = (offset.x + zoom * rotatedPanX).coerceIn(minOf(minX, maxX), maxOf(minX, maxX)),
+                    y = (offset.y + zoom * rotatedPanY).coerceIn(minOf(minY, maxY), maxOf(minY, maxY))
+                )
+
+                onAction(
+                    _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnMemeTextTransformChanged(
+                        id = child.id,
+                        offset = offset,
+                        rotation = rotation,
+                        scale = zoom
+                    )
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .onSizeChanged {
+                        childWidth = it.width
+                        childHeight = it.height
+                    }
+                    .graphicsLayer {
+                        translationX = offset.x
+                        translationY = offset.y
+                        rotationZ = rotation
+                        scaleX = zoom
+                        scaleY = zoom
+                    }
+                    .transformable(gestureState)
+            ) {
+                val isSelected = textBoxInteractionState is com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Selected
+                        && textBoxInteractionState.textBoxId == child.id
+                val isEditing = textBoxInteractionState is com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Editing
+                        && textBoxInteractionState.textBoxId == child.id
+
+                _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeTextBox(
+                    memeText = child,
+                    modifier = Modifier,
+                    maxWidth = (parentWidth * 0.3f / zoom).dp,
+                    maxHeight = (parentHeight * 0.3f / zoom).dp,
+                    isSelected = isSelected,
+                    isEditing = isEditing,
+                    onTextInputChange = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnMemeTextChange(
+                                id = child.id,
+                                text = it
+                            )
+                        )
+                    },
+                    onDelete = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnDeleteMemeText(
+                                child.id
+                            )
+                        )
+                    },
+                    onClick = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnSelectMemeText(
+                                child.id
+                            )
+                        )
+                    },
+                    onDoubleClick = {
+                        onAction(
+                            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnEditMemeText(
+                                child.id
+                            )
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopBar(
+    onGoBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    CenterAlignedTopAppBar(
+        modifier = modifier,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationIconContentColor = MaterialTheme.colorScheme.secondary,
+        ),
+        title = {
+            Text(
+                text = Res.string.title_new_meme.asString(),
+                style = MaterialTheme.typography.headlineLarge
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onGoBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun BottomBar(
+    modifier: Modifier = Modifier,
+    targetedMemeText: MemeText?,
+    onAddTextClick: () -> Unit,
+    onSaveMemeClick: () -> Unit,
+) {
+    if (targetedMemeText == null) {
+        Row(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
+        ) {
+            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeSecondaryButton(
+                text = Res.string.add_text.asString(),
+                onClick = onAddTextClick
+            )
+            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.components.MemePrimaryButton(
+                text = Res.string.save_meme.asString(),
+                onClick = onSaveMemeClick
+            )
+        }
+    } else {
+        Row(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun Preview() {
+    MasterMemeTheme {
+        EditMemeScreen(
+            template = MemeTemplate.TEMPLATE_04,
+            onAction = {},
+            state = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState(
+                textBoxInteraction = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Selected(
+                    0
+                ),
+                memeTexts = listOf(
+                    MemeText(
+                        id = 0,
+                        text = "Text #1",
+                        offset = Offset(100f, 200f)
+                    ),
+                    MemeText(
+                        id = 1,
+                        text = "Text #2",
+                    )
+                )
+            )
+        )
+    }
+}

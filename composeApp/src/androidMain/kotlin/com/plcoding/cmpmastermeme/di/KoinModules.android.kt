@@ -1,12 +1,11 @@
 package com.plcoding.cmpmastermeme.di
 
-import com.plcoding.cmpmastermeme.core.domain.CacheSaveStrategy
-import com.plcoding.cmpmastermeme.core.domain.FilePathResolver
-import com.plcoding.cmpmastermeme.core.domain.MemeExporter
-import com.plcoding.cmpmastermeme.core.domain.PlatformFilePathResolver
-import com.plcoding.cmpmastermeme.core.domain.PlatformSendableFileManager
-import com.plcoding.cmpmastermeme.core.domain.SaveToStorageStrategy
-import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
+import com.plcoding.cmpmastermeme.editmeme.domain.FilePathResolver
+import com.plcoding.cmpmastermeme.editmeme.data.MemeExporter
+import com.plcoding.cmpmastermeme.editmeme.data.PlatformFilePathResolver
+import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
+import com.plcoding.cmpmastermeme.editmeme.data.CacheSaveStrategy
+import com.plcoding.cmpmastermeme.editmeme.domain.SaveToStorageStrategy
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
@@ -19,8 +18,8 @@ actual val coreDataPlatformModule = module {
     }.bind<SaveToStorageStrategy>()
 
     factory {
-        PlatformSendableFileManager(context = androidContext())
-    }.bind<SendableFileManager>()
+        ShareSheetManager(context = androidContext())
+    }.bind<ShareSheetManager>()
     single {
         PlatformFilePathResolver(context = androidContext())
     }.bind<FilePathResolver>()

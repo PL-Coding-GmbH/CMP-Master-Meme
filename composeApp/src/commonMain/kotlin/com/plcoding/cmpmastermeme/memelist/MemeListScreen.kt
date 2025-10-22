@@ -20,7 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cmpmastermeme.composeapp.generated.resources.Res
 import cmpmastermeme.composeapp.generated.resources.title_your_memes
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
-import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.asString
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel

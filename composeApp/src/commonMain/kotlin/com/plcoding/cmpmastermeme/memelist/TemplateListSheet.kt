@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
-import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
+import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
