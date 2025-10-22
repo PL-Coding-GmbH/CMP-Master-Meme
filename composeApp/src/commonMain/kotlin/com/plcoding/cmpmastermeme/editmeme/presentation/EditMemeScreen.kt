@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -199,7 +200,7 @@ private fun DraggableContainer(
             // of the Composable in this forEach UI tree.
             // If two texts are shown and the first is deleted, the new list size will be 1.
             // Compose will then use the old cached transform values from text 1 for text 2.
-            var zoom by remember(child.id) {
+            var zoom by rememberSaveable(child.id) {
                 mutableStateOf(1f)
             }
             var offset by remember(child.id) {
@@ -208,7 +209,7 @@ private fun DraggableContainer(
                     y = child.offsetRatioY * parentHeight
                 ))
             }
-            var rotation by remember(child.id) {
+            var rotation by rememberSaveable(child.id) {
                 mutableStateOf(0f)
             }
 
