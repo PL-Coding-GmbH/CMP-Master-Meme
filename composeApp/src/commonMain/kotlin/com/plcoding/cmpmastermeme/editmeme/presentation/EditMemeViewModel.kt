@@ -4,9 +4,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.plcoding.cmpmastermeme.editmeme.data.MemeExporter
 import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
+import com.plcoding.cmpmastermeme.editmeme.data.MemeExporter
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState
 import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -30,56 +34,56 @@ class EditMemeViewModel(
     private val shareSheetManager: ShareSheetManager,
 ) : ViewModel(), KoinComponent {
 
-    private val _state = MutableStateFlow(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState())
+    private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
 
-    private val eventChannel = Channel<com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent>()
+    private val eventChannel = Channel<EditMemeEvent>()
     val events = eventChannel.receiveAsFlow()
 
     private var selectedTextFontSizeCache: Float? = null
 
-    fun onAction(action: com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction) {
+    fun onAction(action: EditMemeAction) {
         when (action) {
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnEditMemeText -> editTextBox(action.id)
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
+            EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
+            is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
+            is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
+            is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
                 textBoxId = action.id,
                 text = action.text
             )
 
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnMemeTextTransformChanged -> onTextBoxPositionChange(
+            is EditMemeAction.OnMemeTextTransformChanged -> onTextBoxPositionChange(
                 textBoxId = action.id,
                 offset = action.offset,
                 rotation = action.rotation,
                 scale = action.scale
             )
 
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnMemeTextFontSizeChange -> onTextBoxFontSizeChange(
+            is EditMemeAction.OnContainerSizeChanged -> updateTemplateSize(action.size)
+            is EditMemeAction.OnMemeTextFontSizeChange -> onTextBoxFontSizeChange(
                 textBoxId = action.id,
                 fontSize = action.fontSize
             )
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
-            is com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
-            _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction.ClearSelectedMemeText -> clearSelectedMemeText()
+            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
+            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
+            is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
+            EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
+            EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
+            EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
+            EditMemeAction.ClearSelectedMemeText -> clearSelectedMemeText()
             else -> Unit
         }
     }
 
     private fun clearSelectedMemeText() {
         _state.update { it.copy(
-            textBoxInteraction = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.None
+            textBoxInteraction = TextBoxInteractionState.None
         ) }
     }
 
     private fun showLeaveConfirmationIfEdited() = viewModelScope.launch {
         if (state.value.memeTexts.isEmpty()) {
-            eventChannel.send(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent.ConfirmedLeaveWithoutSaving)
+            eventChannel.send(EditMemeEvent.ConfirmedLeaveWithoutSaving)
         } else toggleLeaveEditorConfirmation(show = true)
     }
 
@@ -89,7 +93,7 @@ class EditMemeViewModel(
         }
         // simplest way to first let the dialog hide and then trigger navigation
         delay(100)
-        eventChannel.send(_root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent.ConfirmedLeaveWithoutSaving)
+        eventChannel.send(EditMemeEvent.ConfirmedLeaveWithoutSaving)
     }
 
     private fun toggleLeaveEditorConfirmation(show: Boolean) {
@@ -109,7 +113,7 @@ class EditMemeViewModel(
             saveStrategy = get(named("cache"))
         )
             .onSuccess {
-                shareSheetManager.shareFile(it)
+                shareSheetManager.shareFile(it, "image/jpeg")
             }
             .onFailure {
                 // TODO show failure toast
@@ -188,7 +192,7 @@ class EditMemeViewModel(
         selectedTextFontSizeCache = state.value.memeTexts.firstOrNull { it.id == id }?.fontSize
         _state.update {
             it.copy(
-                textBoxInteraction = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Selected(id)
+                textBoxInteraction = TextBoxInteractionState.Selected(id)
             )
         }
     }
@@ -196,7 +200,7 @@ class EditMemeViewModel(
     private fun editTextBox(id: Int) {
         _state.update {
             it.copy(
-                textBoxInteraction = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Editing(id)
+                textBoxInteraction = TextBoxInteractionState.Editing(id)
             )
         }
     }
@@ -225,7 +229,7 @@ class EditMemeViewModel(
         _state.update {
             it.copy(
                 memeTexts = currentState.memeTexts + newBox,
-                textBoxInteraction = _root_ide_package_.com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState.Selected(newId)
+                textBoxInteraction = TextBoxInteractionState.Selected(newId)
             )
         }
     }

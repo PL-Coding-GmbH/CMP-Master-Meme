@@ -1,7 +1,7 @@
 package com.plcoding.cmpmastermeme.di
 
 import com.plcoding.cmpmastermeme.SharedApplicationScope
-import com.plcoding.cmpmastermeme.editmeme.EditMemeViewModel
+import com.plcoding.cmpmastermeme.editmeme.presentation.EditMemeViewModel
 import com.plcoding.cmpmastermeme.memelist.MemeListViewModel
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.module.Module

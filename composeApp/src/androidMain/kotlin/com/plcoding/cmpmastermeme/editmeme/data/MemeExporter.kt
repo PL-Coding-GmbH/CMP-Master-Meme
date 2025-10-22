@@ -16,10 +16,10 @@ import androidx.core.graphics.withRotation
 import androidx.core.graphics.withScale
 import androidx.core.graphics.withTranslation
 import com.plcoding.cmpmastermeme.R
-import com.plcoding.cmpmastermeme.editmeme.presentation.util.MemeRenderCalculator
-import com.plcoding.cmpmastermeme.editmeme.presentation.util.ScaledTextBox
 import com.plcoding.cmpmastermeme.editmeme.domain.SaveToStorageStrategy
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
+import com.plcoding.cmpmastermeme.editmeme.presentation.util.MemeRenderCalculator
+import com.plcoding.cmpmastermeme.editmeme.presentation.util.ScaledTextBox
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -97,7 +97,7 @@ actual class MemeExporter(
             style = Paint.Style.STROKE
             strokeWidth = scaledBox.strokeWidth
             textSize = scaledBox.scaledFontSize
-            Paint.setTypeface = impactTypeface
+            typeface = impactTypeface
             color = Color.BLACK
             textAlign = Paint.Align.LEFT
         }
@@ -105,7 +105,7 @@ actual class MemeExporter(
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             textSize = scaledBox.scaledFontSize
-            Paint.setTypeface = impactTypeface
+            typeface = impactTypeface
             color = Color.WHITE
             textAlign = Paint.Align.LEFT
         }

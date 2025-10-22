@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.designsystem.button
+import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeUiAction
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -71,11 +72,6 @@ private fun ActionListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tint = when (action) {
-        is MemeUiAction.Delete -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.secondary
-    }
-    
     ListItem(
         modifier = modifier.clickable(onClick = onClick),
         leadingContent = {
@@ -83,12 +79,12 @@ private fun ActionListItem(
                 action.icon != null -> Icon(
                     imageVector = action.icon,
                     contentDescription = null,
-                    tint = tint
+                    tint = MaterialTheme.colorScheme.secondary
                 )
                 action.vectorRes != null -> Icon(
                     imageVector = vectorResource(action.vectorRes),
                     contentDescription = null,
-                    tint = tint
+                    tint = MaterialTheme.colorScheme.secondary
                 )
             }
         },
@@ -96,7 +92,7 @@ private fun ActionListItem(
             Text(
                 text = stringResource(action.titleRes),
                 style = MaterialTheme.typography.button.copy(
-                    color = tint
+                    color = MaterialTheme.colorScheme.secondary
                 )
             )
         },
@@ -120,9 +116,7 @@ private fun Preview() {
     MasterMemeTheme {
         SaveMemeContextContent(
             availableActions = listOf(
-                MemeUiAction.Save(onClick = {}),
                 MemeUiAction.Share(onClick = {}),
-                MemeUiAction.Delete(onClick = {})
             )
         )
     }
