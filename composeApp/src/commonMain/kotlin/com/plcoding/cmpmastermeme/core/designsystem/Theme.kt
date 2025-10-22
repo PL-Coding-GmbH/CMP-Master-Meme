@@ -9,12 +9,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 fun MasterMemeTheme(
     content: @Composable () -> Unit
 ) {
-    val extendedColors = darkExtendedColors
-    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
-        MaterialTheme(
-            colorScheme = DarkColorScheme,
-            typography = Typography,
-            content = content
-        )
-    }
+    MaterialTheme(
+        colorScheme = DarkColorScheme,
+        typography = Typography,
+        content = content
+    )
 }

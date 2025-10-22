@@ -22,21 +22,3 @@ val DarkColorScheme = darkColorScheme(
     error = Color(0xFFB3261E),
     onPrimary = Color(0xFF21005D),
 )
-
-@Immutable
-data class ExtendedColors(
-     val buttonGradient: Brush
-)
-
-val darkExtendedColors = ExtendedColors(
-    buttonGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFEADDFF), Color(0xFFD0BCFE))
-    )
-)
-
-val LocalExtendedColors = staticCompositionLocalOf { darkExtendedColors }
-
-val ColorScheme.extended: ExtendedColors
-    @ReadOnlyComposable
-    @Composable
-    get() = LocalExtendedColors.current
