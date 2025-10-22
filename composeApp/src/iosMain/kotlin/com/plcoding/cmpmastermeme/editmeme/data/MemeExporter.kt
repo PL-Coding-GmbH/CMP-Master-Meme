@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
 package com.plcoding.cmpmastermeme.editmeme.data
 
 import androidx.compose.ui.unit.IntSize
@@ -35,6 +37,7 @@ import platform.UIKit.NSMutableParagraphStyle
 import platform.UIKit.NSParagraphStyleAttributeName
 import platform.UIKit.NSStrokeColorAttributeName
 import platform.UIKit.NSStrokeWidthAttributeName
+import platform.UIKit.NSTextAlignmentCenter
 import platform.UIKit.NSTextAlignmentLeft
 import platform.UIKit.UIColor
 import platform.UIKit.UIFont
@@ -206,10 +209,29 @@ actual class MemeExporter {
         context: CGContextRef,
         scaledBox: ScaledTextBox
     ) {
-        val attributes = createMemeTextAttributes(scaledBox.scaledFontSize)
+        // First measure with left alignment to determine line count
+        val leftAlignAttributes = createMemeTextAttributes(scaledBox.scaledFontSize, useCenter = false)
         val textNS = NSString.Companion.create(string = scaledBox.text)
 
-        // Calculate text size
+        val measureRect = textNS.boundingRectWithSize(
+            size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
+            options = 1L shl 0,
+            attributes = leftAlignAttributes,
+            context = null
+        )
+
+        val actualTextHeight = measureRect.useContents { size.height }
+        val lineHeight = scaledBox.scaledFontSize * 1.5
+        val isMultiLine = actualTextHeight > lineHeight
+
+        // Choose attributes based on line count
+        val attributes = if (isMultiLine) {
+            createMemeTextAttributes(scaledBox.scaledFontSize, useCenter = true)
+        } else {
+            leftAlignAttributes
+        }
+
+        // Calculate text size with final attributes
         val boundingRect = textNS.boundingRectWithSize(
             size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
             options = 1L shl 0,
@@ -217,18 +239,22 @@ actual class MemeExporter {
             context = null
         )
 
-        val actualTextWidth = boundingRect.useContents { size.width }
-        val actualTextHeight = boundingRect.useContents { size.height }
+        val actualTextWidth = if (isMultiLine) {
+            // For multi-line centered text, use constraint width
+            scaledBox.constraintWidth.toFloat()
+        } else {
+            // For single-line left-aligned text, use actual width
+            boundingRect.useContents { size.width.toFloat() }
+        }
+        val finalTextHeight = boundingRect.useContents { size.height }
 
-        // Get positioning from calculator
         val boxWithPivots = calculator.calculatePivotPoints(
             scaledBox = scaledBox,
-            actualTextWidth = actualTextWidth.toFloat(),
-            textHeight = actualTextHeight.toFloat()
+            actualTextWidth = actualTextWidth,
+            textHeight = finalTextHeight.toFloat()
         )
         val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
 
-        // Apply transforms and draw
         CGContextSaveGState(context)
 
         CGContextTranslateCTM(
@@ -269,12 +295,13 @@ actual class MemeExporter {
     /**
      * Creates meme text attributes with white fill and black outline
      */
-    private fun createMemeTextAttributes(fontSize: Float): Map<Any?, Any?> {
+    private fun createMemeTextAttributes(fontSize: Float, useCenter: Boolean = false): Map<Any?, Any?> {
         val font = UIFont.Companion.fontWithName("Impact", size = fontSize.toDouble())
             ?: UIFont.Companion.boldSystemFontOfSize(fontSize.toDouble())
 
+        val alignment = if (useCenter) NSTextAlignmentCenter else NSTextAlignmentLeft
         val paragraphStyle = NSMutableParagraphStyle().apply {
-            setAlignment(NSTextAlignmentLeft)
+            setAlignment(alignment)
             setLineBreakMode(NSLineBreakByWordWrapping)
         }
 

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import com.plcoding.cmpmastermeme.editmeme.data.MemeExporter
+import com.plcoding.cmpmastermeme.editmeme.domain.SaveToStorageStrategy
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
@@ -25,14 +26,12 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.qualifier.named
 
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val shareSheetManager: ShareSheetManager,
-) : ViewModel(), KoinComponent {
+    private val saveStrategy: SaveToStorageStrategy
+) : ViewModel() {
 
     private val _state = MutableStateFlow(EditMemeState())
     val state = _state.asStateFlow()
@@ -46,6 +45,7 @@ class EditMemeViewModel(
         when (action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
             is EditMemeAction.OnEditMemeText -> editTextBox(action.id)
+            is EditMemeAction.OnSaveMemeClick -> shareMeme(action.memeTemplate)
             is EditMemeAction.OnSelectMemeText -> selectTextBox(action.id)
             is EditMemeAction.OnMemeTextChange -> onTextBoxTextChange(
                 textBoxId = action.id,
@@ -64,9 +64,6 @@ class EditMemeViewModel(
                 textBoxId = action.id,
                 fontSize = action.fontSize
             )
-            EditMemeAction.OnCompleteEditingClick -> toggleIsFinalisingMeme(isFinalising = true)
-            EditMemeAction.OnContinueEditing -> toggleIsFinalisingMeme(isFinalising = false)
-            is EditMemeAction.OnShareMemeClick -> shareMeme(action.memeTemplate)
             EditMemeAction.OnGoBackClick -> showLeaveConfirmationIfEdited()
             EditMemeAction.OnCancelLeaveWithoutSaving -> toggleLeaveEditorConfirmation(show = false)
             EditMemeAction.OnConfirmLeaveWithoutSaving -> leaveWithoutSaving()
@@ -103,14 +100,11 @@ class EditMemeViewModel(
     }
 
     private fun shareMeme(memeTemplate: MemeTemplate) = viewModelScope.launch {
-        _state.update {
-            it.copy(isFinalisingMeme = false)
-        }
         memeExporter.exportMeme(
             backgroundImageBytes = memeTemplate.drawableResource.getBytes(),
             textBoxes = state.value.memeTexts,
             canvasSize = state.value.templateSize,
-            saveStrategy = get(named("cache"))
+            saveStrategy = saveStrategy
         )
             .onSuccess {
                 shareSheetManager.shareFile(it, "image/jpeg")
@@ -118,12 +112,6 @@ class EditMemeViewModel(
             .onFailure {
                 // TODO show failure toast
             }
-    }
-
-    private fun toggleIsFinalisingMeme(isFinalising: Boolean) {
-        _state.update {
-            it.copy(isFinalisingMeme = isFinalising)
-        }
     }
 
     /*

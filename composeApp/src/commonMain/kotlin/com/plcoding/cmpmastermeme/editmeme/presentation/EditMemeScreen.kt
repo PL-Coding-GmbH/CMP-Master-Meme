@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 
 package com.plcoding.cmpmastermeme.editmeme.presentation
 
@@ -24,13 +24,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.geometry.Offset
@@ -50,11 +50,14 @@ import com.plcoding.cmpmastermeme.core.designsystem.MasterMemeTheme
 import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import com.plcoding.cmpmastermeme.core.presentation.ObserveAsEvents
 import com.plcoding.cmpmastermeme.core.presentation.asString
+import com.plcoding.cmpmastermeme.editmeme.presentation.EditMemeViewModel
+import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemePrimaryButton
+import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeSecondaryButton
+import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeTextBox
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
-import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeUiAction
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState
 import org.jetbrains.compose.resources.imageResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -89,10 +92,8 @@ private fun EditMemeScreen(
     template: MemeTemplate,
     onAction: (EditMemeAction) -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-
     BackHandler(
-        enabled = !state.isLeavingWithoutSaving && !state.isFinalisingMeme,
+        enabled = !state.isLeavingWithoutSaving,
         onBack = { onAction(EditMemeAction.OnGoBackClick) }
     )
 
@@ -110,9 +111,8 @@ private fun EditMemeScreen(
         bottomBar = {
             BottomBar(
                 modifier = Modifier.padding(vertical = 8.dp),
-                onSaveMemeClick = { onAction(EditMemeAction.OnCompleteEditingClick) },
+                onSaveMemeClick = { onAction(EditMemeAction.OnSaveMemeClick(memeTemplate = template)) },
                 onAddTextClick = { onAction(EditMemeAction.OnAddNewMemeTextClick) },
-                targetedMemeText = state.memeTexts.firstOrNull { it.id == state.textBoxInteraction.targetedTextBoxId },
             )
         }
     ) { paddingValues ->
@@ -146,27 +146,6 @@ private fun EditMemeScreen(
                 )
             }
         }
-    }
-
-    // Conditional UI
-    if (state.isFinalisingMeme) {
-        com.plcoding.cmpmastermeme.editmeme.presentation.components.SaveMemeContextSheetRoot(
-            availableActions = listOf(
-                MemeUiAction.Share(
-                    onClick = {
-                        onAction(
-                            EditMemeAction.OnShareMemeClick(
-                                memeTemplate = template
-                            )
-                        )
-                    }
-                )
-            ),
-            onDismiss = {
-                onAction(EditMemeAction.OnContinueEditing)
-            },
-            sheetState = sheetState,
-        )
     }
 
     if (state.isLeavingWithoutSaving) {
@@ -276,7 +255,7 @@ private fun DraggableContainer(
                 val isEditing = textBoxInteractionState is TextBoxInteractionState.Editing
                         && textBoxInteractionState.textBoxId == child.id
 
-                com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeTextBox(
+                MemeTextBox(
                     memeText = child,
                     modifier = Modifier,
                     maxWidth = (parentWidth * 0.3f / zoom).dp,
@@ -350,37 +329,24 @@ private fun TopBar(
 @Composable
 private fun BottomBar(
     modifier: Modifier = Modifier,
-    targetedMemeText: MemeText?,
     onAddTextClick: () -> Unit,
     onSaveMemeClick: () -> Unit,
 ) {
-    if (targetedMemeText == null) {
-        Row(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
-        ) {
-            com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeSecondaryButton(
-                text = Res.string.add_text.asString(),
-                onClick = onAddTextClick
-            )
-            com.plcoding.cmpmastermeme.editmeme.presentation.components.MemePrimaryButton(
-                text = Res.string.save_meme.asString(),
-                onClick = onSaveMemeClick
-            )
-        }
-    } else {
-        Row(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-
-        }
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
+    ) {
+        MemeSecondaryButton(
+            text = Res.string.add_text.asString(),
+            onClick = onAddTextClick
+        )
+        MemePrimaryButton(
+            text = Res.string.save_meme.asString(),
+            onClick = onSaveMemeClick
+        )
     }
 }
 
@@ -392,9 +358,7 @@ private fun Preview() {
             template = MemeTemplate.TEMPLATE_04,
             onAction = {},
             state = EditMemeState(
-                textBoxInteraction = TextBoxInteractionState.Selected(
-                    0
-                ),
+                textBoxInteraction = TextBoxInteractionState.Selected(0),
                 memeTexts = listOf(
                     MemeText(
                         id = 0,

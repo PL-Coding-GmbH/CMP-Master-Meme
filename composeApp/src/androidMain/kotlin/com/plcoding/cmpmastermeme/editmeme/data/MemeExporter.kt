@@ -132,21 +132,39 @@ actual class MemeExporter(
             .setIncludePad(false)
             .build()
 
-        // Get actual text dimensions and calculate pivot points
-        val actualTextWidth = (0 until strokeLayout.lineCount).maxOfOrNull { line ->
-            strokeLayout.getLineWidth(line)
-        } ?: strokeLayout.width.toFloat()
+        // Check if text is single or multi-line
+        val isSingleLine = strokeLayout.lineCount <= 1
+
+        // For single-line text, calculate actual text width
+        // For multi-line text, use the full constraint width
+        val textWidth = if (isSingleLine) {
+            val actualLineWidth = if (strokeLayout.lineCount > 0) {
+                strokeLayout.getLineWidth(0)
+            } else {
+                0f
+            }
+            actualLineWidth
+        } else {
+            strokeLayout.width.toFloat()
+        }
         val textHeight = strokeLayout.height.toFloat()
 
         val boxWithPivots = calculator.calculatePivotPoints(
             scaledBox,
-            actualTextWidth,
+            textWidth,
             textHeight
         )
 
-        val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
+        val textPosition = if (isSingleLine) {
+            // For single line, center the actual text width within the constraint
+            val centerOffset = (scaledBox.constraintWidth - textWidth) / 2f
+            calculator.getTextDrawingPosition(boxWithPivots).copy(
+                x = calculator.getTextDrawingPosition(boxWithPivots).x - centerOffset
+            )
+        } else {
+            calculator.getTextDrawingPosition(boxWithPivots)
+        }
 
-        // Apply transformations
         canvas.withScale(boxWithPivots.scale, boxWithPivots.scale, boxWithPivots.pivotX, boxWithPivots.pivotY) {
             canvas.withRotation(boxWithPivots.rotation, boxWithPivots.pivotX, boxWithPivots.pivotY) {
                 canvas.withTranslation(textPosition.x, textPosition.y) {
