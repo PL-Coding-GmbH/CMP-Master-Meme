@@ -10,8 +10,6 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
-import androidx.compose.ui.geometry.Offset
-import androidx.core.content.res.ResourcesCompat
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withRotation
@@ -40,7 +38,7 @@ actual class MemeExporter(
         textBoxes: List<MemeText>,
         canvasSize: IntSize,
         fileName: String,
-        saveStrategy: SaveStrategy,
+        saveStrategy: SaveToStorageStrategy,
     ) = withContext(Dispatchers.IO) {
         try {
             val bitmap =

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
 package com.plcoding.cmpmastermeme.editmeme.data
 
 import androidx.compose.ui.unit.IntSize
@@ -63,7 +65,7 @@ actual class MemeExporter {
         textBoxes: List<MemeText>,
         canvasSize: IntSize,
         fileName: String,
-        saveStrategy: SaveStrategy
+        saveStrategy: SaveToStorageStrategy
     ): Result<FilePath> = withContext(Dispatchers.IO) {
         try {
             val backgroundImage =
@@ -184,7 +186,7 @@ actual class MemeExporter {
     private fun saveMemeToFile(
         image: UIImage,
         fileName: String,
-        saveStrategy: SaveStrategy
+        saveStrategy: SaveToStorageStrategy
     ): Result<FilePath> {
         val pngData = UIImagePNGRepresentation(image)
             ?: return Result.failure(Exception("Failed to convert image to PNG"))

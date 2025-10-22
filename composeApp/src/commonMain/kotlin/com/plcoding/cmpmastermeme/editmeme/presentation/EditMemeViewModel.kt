@@ -6,21 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.plcoding.cmpmastermeme.core.presentation.MemeTemplate
 import com.plcoding.cmpmastermeme.editmeme.data.MemeExporter
+import com.plcoding.cmpmastermeme.editmeme.domain.SaveToStorageStrategy
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.MemeText
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractionState
 import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
-import com.plcoding.cmpmastermeme.core.domain.MemeExporter
-import com.plcoding.cmpmastermeme.core.domain.MemeTemplate
-import com.plcoding.cmpmastermeme.core.domain.SaveStrategy
-import com.plcoding.cmpmastermeme.core.domain.SendableFileManager
-import com.plcoding.cmpmastermeme.editmeme.models.EditMemeAction
-import com.plcoding.cmpmastermeme.editmeme.models.EditMemeEvent
-import com.plcoding.cmpmastermeme.editmeme.models.EditMemeState
-import com.plcoding.cmpmastermeme.editmeme.models.MemeText
-import com.plcoding.cmpmastermeme.editmeme.models.TextBoxInteractionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
@@ -38,7 +30,7 @@ import org.jetbrains.compose.resources.getSystemResourceEnvironment
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
     private val shareSheetManager: ShareSheetManager,
-    private val saveStrategy: SaveStrategy
+    private val saveStrategy: SaveToStorageStrategy
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditMemeState())
