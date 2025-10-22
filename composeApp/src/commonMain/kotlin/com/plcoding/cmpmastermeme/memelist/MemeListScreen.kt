@@ -41,7 +41,6 @@ fun MemeListScreenRoot(
                 is MemeListAction.OnTemplateSelected -> onNavigateToEditTemplateSelected(action.template)
                 else -> Unit
             }
-            viewModel.onAction(action)
         },
     )
 }
