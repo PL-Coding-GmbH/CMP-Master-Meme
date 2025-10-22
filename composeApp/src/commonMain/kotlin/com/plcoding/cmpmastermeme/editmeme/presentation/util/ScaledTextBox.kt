@@ -55,10 +55,10 @@ class MemeRenderCalculator(
     fun calculateScaledTextBoxes(
         textBoxes: List<MemeText>,
         scaleFactors: ScaleFactors,
-        displayWidth: Int
+        templateSize: IntSize
     ): List<ScaledTextBox> {
         return textBoxes.map { box ->
-            calculateScaledTextBox(box, scaleFactors, displayWidth)
+            calculateScaledTextBox(box, scaleFactors, templateSize)
         }
     }
 
@@ -68,14 +68,14 @@ class MemeRenderCalculator(
     private fun calculateScaledTextBox(
         box: MemeText,
         scaleFactors: ScaleFactors,
-        displayWidth: Int
+        templateSize: IntSize
     ): ScaledTextBox {
         val (scaleX, scaleY, bitmapScale) = scaleFactors
 
         // Scale position
         val scaledOffset = Offset(
-            x = box.offset.x * scaleX,
-            y = box.offset.y * scaleY
+            x = (box.offsetRatioX * templateSize.width) * scaleX,
+            y = (box.offsetRatioY * templateSize.height) * scaleY
         )
 
         // Calculate padding in bitmap coordinates
@@ -92,7 +92,7 @@ class MemeRenderCalculator(
         // Calculate constraint width (matching editor logic)
         val paddingDp = TEXT_PADDING_DP * 2  // 8dp * 2 = 16dp
         val paddingPx = paddingDp * density
-        val constraintWidth = ((displayWidth * TEXT_WIDTH_FACTOR / box.scale) * density * scaleX - paddingPx * scaleX)
+        val constraintWidth = ((templateSize.width * TEXT_WIDTH_FACTOR / box.scale) * density * scaleX - paddingPx * scaleX)
             .toInt()
             .coerceAtLeast(1)
 

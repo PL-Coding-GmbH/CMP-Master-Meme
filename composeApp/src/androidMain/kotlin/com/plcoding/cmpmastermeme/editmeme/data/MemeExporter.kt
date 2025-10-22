@@ -76,7 +76,7 @@ actual class MemeExporter(
         val scaledBoxes = calculator.calculateScaledTextBoxes(
             textBoxes,
             scaleFactors,
-            displaySize.width
+            displaySize
         )
 
         scaledBoxes.forEach { scaledBox ->

@@ -159,9 +159,8 @@ private fun Preview() {
     var memeText by remember(text, placement) {
         mutableStateOf(
             MemeText(
-                id = 1,
+                id = "1",
                 text = text,
-                offset = placement
             )
         )
     }

@@ -28,7 +28,7 @@ fun MemeTemplateListContent(
     modifier: Modifier = Modifier
 ) {
     LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(200.dp),
+        columns = StaggeredGridCells.Adaptive(150.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalItemSpacing = 16.dp,
         contentPadding = PaddingValues(8.dp),

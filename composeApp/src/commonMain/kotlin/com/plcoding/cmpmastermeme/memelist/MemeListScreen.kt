@@ -28,28 +28,19 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun MemeListScreenRoot(
     onNavigateToEditTemplateSelected: (MemeTemplate) -> Unit,
-    viewModel: MemeListViewModel = koinViewModel()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     MemeListScreen(
-        state = state,
         snackbarHostState = snackbarHostState,
-        onAction = { action ->
-            when (action) {
-                is MemeListAction.OnTemplateSelected -> onNavigateToEditTemplateSelected(action.template)
-                else -> Unit
-            }
-        },
+        onTemplateClick = onNavigateToEditTemplateSelected,
     )
 }
 
 @Composable
 private fun MemeListScreen(
-    state: MemeListState,
     snackbarHostState: SnackbarHostState,
-    onAction: (MemeListAction) -> Unit
+    onTemplateClick: (MemeTemplate) -> Unit
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -70,10 +61,8 @@ private fun MemeListScreen(
         },
     ) { innerPadding ->
         MemeTemplateListContent(
-            memeTemplates = state.templates,
-            onMemeTemplateSelected = {
-                onAction(MemeListAction.OnTemplateSelected(it))
-            },
+            memeTemplates = MemeTemplate.entries,
+            onMemeTemplateSelected = onTemplateClick,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -86,9 +75,8 @@ private fun MemeListScreen(
 private fun Preview() {
     MasterMemeTheme {
         MemeListScreen(
-            state = MemeListState(),
             snackbarHostState = remember { SnackbarHostState() },
-            onAction = {}
+            onTemplateClick = {}
         )
     }
 }

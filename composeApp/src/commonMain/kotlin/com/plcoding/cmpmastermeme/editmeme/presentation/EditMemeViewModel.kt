@@ -15,6 +15,7 @@ import com.plcoding.cmpmastermeme.editmeme.presentation.models.TextBoxInteractio
 import com.plcoding.cmpmastermeme.editmeme.presentation.util.ShareSheetManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
+import kotlin.uuid.Uuid
 
 class EditMemeViewModel(
     private val memeExporter: MemeExporter,
@@ -51,6 +53,7 @@ class EditMemeViewModel(
                 textBoxId = action.id,
                 text = action.text
             )
+            is EditMemeAction.OnDeleteMemeText -> deleteMemeText(action.id)
 
             is EditMemeAction.OnMemeTextTransformChanged -> onTextBoxPositionChange(
                 textBoxId = action.id,
@@ -70,6 +73,14 @@ class EditMemeViewModel(
             EditMemeAction.ClearSelectedMemeText -> clearSelectedMemeText()
             else -> Unit
         }
+    }
+
+    private fun deleteMemeText(id: String) {
+        _state.update { it.copy(
+            memeTexts = it.memeTexts.filter {
+                it.id != id
+            }
+        ) }
     }
 
     private fun clearSelectedMemeText() {
@@ -109,9 +120,6 @@ class EditMemeViewModel(
             .onSuccess {
                 shareSheetManager.shareFile(it, "image/jpeg")
             }
-            .onFailure {
-                // TODO show failure toast
-            }
     }
 
     /*
@@ -125,7 +133,7 @@ class EditMemeViewModel(
         )
     }
 
-    private fun onTextBoxTextChange(textBoxId: Int, text: String) {
+    private fun onTextBoxTextChange(textBoxId: String, text: String) {
         _state.update {
             it.copy(
                 memeTexts = it.memeTexts.map { textBox ->
@@ -138,17 +146,19 @@ class EditMemeViewModel(
     }
 
     private fun onTextBoxPositionChange(
-        textBoxId: Int,
+        textBoxId: String,
         offset: Offset,
         rotation: Float,
         scale: Float
     ) {
         _state.update {
+            val (width, height) = it.templateSize
             it.copy(
                 memeTexts = it.memeTexts.map { textBox ->
                     if (textBox.id == textBoxId) {
                         textBox.copy(
-                            offset = offset,
+                            offsetRatioX = offset.x / width,
+                            offsetRatioY = offset.y / height,
                             rotation = rotation,
                             scale = scale
                         )
@@ -158,7 +168,7 @@ class EditMemeViewModel(
         }
     }
 
-    private fun onTextBoxFontSizeChange(textBoxId: Int, fontSize: Float) {
+    private fun onTextBoxFontSizeChange(textBoxId: String, fontSize: Float) {
         _state.update {
             it.copy(
                 memeTexts = it.memeTexts.map { textBox ->
@@ -176,7 +186,7 @@ class EditMemeViewModel(
         }
     }
 
-    private fun selectTextBox(id: Int) {
+    private fun selectTextBox(id: String) {
         selectedTextFontSizeCache = state.value.memeTexts.firstOrNull { it.id == id }?.fontSize
         _state.update {
             it.copy(
@@ -185,7 +195,7 @@ class EditMemeViewModel(
         }
     }
 
-    private fun editTextBox(id: Int) {
+    private fun editTextBox(id: String) {
         _state.update {
             it.copy(
                 textBoxInteraction = TextBoxInteractionState.Editing(id)
@@ -195,7 +205,7 @@ class EditMemeViewModel(
 
     private fun createTextBox() = viewModelScope.launch {
         val currentState = state.value
-        val newId = currentState.memeTexts.maxOfOrNull { it.id }?.inc() ?: 1
+        val newId = Uuid.random().toString()
 
         // Place new text at center if template size is known, otherwise top-left
         val position = if (currentState.templateSize != IntSize.Zero) {
@@ -209,14 +219,15 @@ class EditMemeViewModel(
 
         val newBox = MemeText(
             id = newId,
-            text = "TAP TO EDIT", // TODO string resources
-            offset = position,
+            text = "TAP TO EDIT",
+            offsetRatioX = position.x / currentState.templateSize.width,
+            offsetRatioY = position.y / currentState.templateSize.height,
             fontSize = 36f
         )
 
         _state.update {
             it.copy(
-                memeTexts = currentState.memeTexts + newBox,
+                memeTexts = it.memeTexts + newBox,
                 textBoxInteraction = TextBoxInteractionState.Selected(newId)
             )
         }

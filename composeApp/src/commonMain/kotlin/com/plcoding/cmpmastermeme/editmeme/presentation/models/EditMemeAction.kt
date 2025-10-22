@@ -16,21 +16,21 @@ sealed interface EditMemeAction {
 
     // Text Management Actions
     data object OnAddNewMemeTextClick : EditMemeAction
-    data class OnSelectMemeText(val id: Int) : EditMemeAction
-    data class OnEditMemeText(val id: Int) : EditMemeAction
-    data class OnMemeTextChange(val id: Int, val text: String) : EditMemeAction
-    data class OnDeleteMemeText(val id: Int) : EditMemeAction
+    data class OnSelectMemeText(val id: String) : EditMemeAction
+    data class OnEditMemeText(val id: String) : EditMemeAction
+    data class OnMemeTextChange(val id: String, val text: String) : EditMemeAction
+    data class OnDeleteMemeText(val id: String) : EditMemeAction
 
     // Text Positioning Actions
     data class OnMemeTextTransformChanged(
-        val id: Int,
+        val id: String,
         val offset: Offset,
         val rotation: Float,
         val scale: Float
     ) : EditMemeAction
 
     // Text Styling Actions
-    data class OnMemeTextFontSizeChange(val id: Int, val fontSize: Float) : EditMemeAction
+    data class OnMemeTextFontSizeChange(val id: String, val fontSize: Float) : EditMemeAction
 
     // Layout Actions
     data class OnContainerSizeChanged(val size: IntSize) : EditMemeAction

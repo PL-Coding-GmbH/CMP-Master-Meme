@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,8 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowDpSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,6 +58,7 @@ import com.plcoding.cmpmastermeme.editmeme.presentation.EditMemeViewModel
 import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemePrimaryButton
 import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeSecondaryButton
 import com.plcoding.cmpmastermeme.editmeme.presentation.components.MemeTextBox
+import com.plcoding.cmpmastermeme.editmeme.presentation.components.confirmationdialog.LeaveEditorConfirmationDialog
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeAction
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeEvent
 import com.plcoding.cmpmastermeme.editmeme.presentation.models.EditMemeState
@@ -97,6 +102,8 @@ private fun EditMemeScreen(
         onBack = { onAction(EditMemeAction.OnGoBackClick) }
     )
 
+    val windowSize = currentWindowDpSize()
+
     Scaffold(
         modifier = Modifier.pointerInput(Unit) {
             detectTapGestures(
@@ -104,9 +111,6 @@ private fun EditMemeScreen(
                     onAction(EditMemeAction.ClearSelectedMemeText)
                 }
             )
-        },
-        topBar = {
-            TopBar(onGoBackClick = { onAction(EditMemeAction.OnGoBackClick) })
         },
         bottomBar = {
             BottomBar(
@@ -127,16 +131,21 @@ private fun EditMemeScreen(
                     bitmap = imageResource(template.drawableResource),
                     contentDescription = template.id,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onPlaced { layoutCoordinates ->
-                            val size = layoutCoordinates.size
+                        .then(
+                            if(windowSize.width > windowSize.height) {
+                                Modifier.fillMaxHeight()
+                            } else Modifier.fillMaxWidth()
+                        )
+                        .onSizeChanged { size ->
                             onAction(
-                                EditMemeAction.OnContainerSizeChanged(
-                                    IntSize(size.width, size.height)
-                                )
+                                EditMemeAction.OnContainerSizeChanged(size)
                             )
                         },
-                    contentScale = ContentScale.FillWidth
+                    contentScale = if (windowSize.width > windowSize.height) {
+                        ContentScale.FillHeight
+                    } else {
+                        ContentScale.FillWidth
+                    }
                 )
                 DraggableContainer(
                     children = state.memeTexts,
@@ -145,11 +154,24 @@ private fun EditMemeScreen(
                     modifier = Modifier.matchParentSize()
                 )
             }
+
+            IconButton(
+                onClick = {
+                    onAction(EditMemeAction.OnGoBackClick)
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
         }
     }
 
     if (state.isLeavingWithoutSaving) {
-        com.plcoding.cmpmastermeme.editmeme.presentation.components.confirmationdialog.LeaveEditorConfirmationDialog(
+        LeaveEditorConfirmationDialog(
             onDismiss = { onAction(EditMemeAction.OnCancelLeaveWithoutSaving) },
             onConfirmLeave = { onAction(EditMemeAction.OnConfirmLeaveWithoutSaving) }
         )
@@ -170,16 +192,23 @@ private fun DraggableContainer(
         val parentHeight = constraints.maxHeight
 
         children.forEach { child ->
-            var childWidth by remember { mutableStateOf(0) }
-            var childHeight by remember { mutableStateOf(0) }
+            var childWidth by remember(child.id) { mutableStateOf(0) }
+            var childHeight by remember(child.id) { mutableStateOf(0) }
 
-            var zoom by remember {
+            // Without passing the key, the remembered state is remembered based on the position
+            // of the Composable in this forEach UI tree.
+            // If two texts are shown and the first is deleted, the new list size will be 1.
+            // Compose will then use the old cached transform values from text 1 for text 2.
+            var zoom by remember(child.id) {
                 mutableStateOf(1f)
             }
-            var offset by remember {
-                mutableStateOf(Offset(child.offset.x, child.offset.y))
+            var offset by remember(child.id) {
+                mutableStateOf(Offset(
+                    x = child.offsetRatioX * parentWidth,
+                    y = child.offsetRatioY * parentHeight
+                ))
             }
-            var rotation by remember {
+            var rotation by remember(child.id) {
                 mutableStateOf(0f)
             }
 
@@ -203,8 +232,10 @@ private fun DraggableContainer(
                 val scaledHeight = childHeight * zoom
 
                 // Visual bounds after rotation (absolute values since rotation can be any angle)
-                val visualWidth = kotlin.math.abs(scaledWidth * cos) + kotlin.math.abs(scaledHeight * sin)
-                val visualHeight = kotlin.math.abs(scaledWidth * sin) + kotlin.math.abs(scaledHeight * cos)
+                val visualWidth =
+                    kotlin.math.abs(scaledWidth * cos) + kotlin.math.abs(scaledHeight * sin)
+                val visualHeight =
+                    kotlin.math.abs(scaledWidth * sin) + kotlin.math.abs(scaledHeight * cos)
 
                 // Offset from layout center to visual center due to scaling
                 val scaleOffsetX = (scaledWidth - childWidth) / 2
@@ -221,8 +252,14 @@ private fun DraggableContainer(
                 val maxY = parentHeight - childHeight - scaleOffsetY - rotationOffsetY
 
                 offset = Offset(
-                    x = (offset.x + zoom * rotatedPanX).coerceIn(minOf(minX, maxX), maxOf(minX, maxX)),
-                    y = (offset.y + zoom * rotatedPanY).coerceIn(minOf(minY, maxY), maxOf(minY, maxY))
+                    x = (offset.x + zoom * rotatedPanX).coerceIn(
+                        minOf(minX, maxX),
+                        maxOf(minX, maxX)
+                    ),
+                    y = (offset.y + zoom * rotatedPanY).coerceIn(
+                        minOf(minY, maxY),
+                        maxOf(minY, maxY)
+                    )
                 )
 
                 onAction(
@@ -336,7 +373,8 @@ private fun BottomBar(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(vertical = 8.dp)
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
     ) {
         MemeSecondaryButton(
@@ -358,15 +396,16 @@ private fun Preview() {
             template = MemeTemplate.TEMPLATE_04,
             onAction = {},
             state = EditMemeState(
-                textBoxInteraction = TextBoxInteractionState.Selected(0),
+                textBoxInteraction = TextBoxInteractionState.Selected("0"),
                 memeTexts = listOf(
                     MemeText(
-                        id = 0,
+                        id = "0",
                         text = "Text #1",
-                        offset = Offset(100f, 200f)
+                        offsetRatioX = 0f,
+                        offsetRatioY = 0f
                     ),
                     MemeText(
-                        id = 1,
+                        id = "1",
                         text = "Text #2",
                     )
                 )
