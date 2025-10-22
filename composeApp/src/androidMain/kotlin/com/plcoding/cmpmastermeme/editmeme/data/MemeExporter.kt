@@ -10,6 +10,8 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import androidx.compose.ui.geometry.Offset
+import androidx.core.content.res.ResourcesCompat
 import androidx.compose.ui.unit.IntSize
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withRotation
@@ -117,7 +119,7 @@ actual class MemeExporter(
             TextPaint(strokePaint),
             scaledBox.constraintWidth
         )
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
 
@@ -128,25 +130,43 @@ actual class MemeExporter(
             TextPaint(fillPaint),
             scaledBox.constraintWidth
         )
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
 
-        // Get actual text dimensions
-        val actualTextWidth = (0 until strokeLayout.lineCount).maxOfOrNull { line ->
-            strokeLayout.getLineWidth(line)
-        } ?: strokeLayout.width.toFloat()
+        // Check if text is single or multi-line
+        val isSingleLine = strokeLayout.lineCount <= 1
+
+        // For single-line text, calculate actual text width
+        // For multi-line text, use the full constraint width
+        val textWidth = if (isSingleLine) {
+            val actualLineWidth = if (strokeLayout.lineCount > 0) {
+                strokeLayout.getLineWidth(0)
+            } else {
+                0f
+            }
+            actualLineWidth
+        } else {
+            strokeLayout.width.toFloat()
+        }
         val textHeight = strokeLayout.height.toFloat()
 
         val boxWithPivots = calculator.calculatePivotPoints(
             scaledBox,
-            actualTextWidth,
+            textWidth,
             textHeight
         )
 
-        val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
+        val textPosition = if (isSingleLine) {
+            // For single line, center the actual text width within the constraint
+            val centerOffset = (scaledBox.constraintWidth - textWidth) / 2f
+            calculator.getTextDrawingPosition(boxWithPivots).copy(
+                x = calculator.getTextDrawingPosition(boxWithPivots).x - centerOffset
+            )
+        } else {
+            calculator.getTextDrawingPosition(boxWithPivots)
+        }
 
-        // Apply transformations
         canvas.withScale(boxWithPivots.scale, boxWithPivots.scale, boxWithPivots.pivotX, boxWithPivots.pivotY) {
             canvas.withRotation(boxWithPivots.rotation, boxWithPivots.pivotX, boxWithPivots.pivotY) {
                 canvas.withTranslation(textPosition.x, textPosition.y) {
