@@ -137,8 +137,12 @@ actual class MemeExporter(
 
         val textHeight = strokeLayout.height.toFloat()
 
+        val actualTextWidth = (0 until strokeLayout.lineCount)
+            .maxOfOrNull { strokeLayout.getLineWidth(it) }
+            ?: 0f
+
         // Calculate box dimensions (drawing rectangle including padding)
-        val boxWidth = scaledBox.constraintWidth + scaledBox.textPaddingX * 2
+        val boxWidth = actualTextWidth + scaledBox.textPaddingX * 2
         val boxHeight = textHeight + scaledBox.textPaddingY * 2
 
         // Calculate center of the box (THIS is the pivot)
@@ -146,19 +150,17 @@ actual class MemeExporter(
         val centerY = scaledBox.scaledOffset.y + boxHeight / 2f
 
         canvas.withTranslation(centerX, centerY) {
-
-            // Step 1: Translate to center
-            // Step 2: Apply transformations (now around center)
             scale(scaledBox.scale, scaledBox.scale)
             rotate(scaledBox.rotation)
 
-            // Step 3: Translate back to drawing position (relative to center)
+            // Calculate drawing offset
+            // Text is centered within constraintWidth, so we need to account for that
+            val textCenteringOffset = (scaledBox.constraintWidth - actualTextWidth) / 2f
             translate(
-                -boxWidth / 2f + scaledBox.textPaddingX,
+                -boxWidth / 2f + scaledBox.textPaddingX - textCenteringOffset,
                 -boxHeight / 2f + scaledBox.textPaddingY
             )
 
-            // Step 4: Draw text at origin in this transformed space
             strokeLayout.draw(this)
             fillLayout.draw(this)
 

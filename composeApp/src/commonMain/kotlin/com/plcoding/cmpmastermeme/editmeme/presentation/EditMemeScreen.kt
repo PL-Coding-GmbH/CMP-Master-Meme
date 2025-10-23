@@ -240,7 +240,7 @@ private fun DraggableContainer(
                 val rotatedPanY = panChange.x * sin + panChange.y * cos
 
                 // 3) Update zoom
-                zoom = (zoom * zoomChange).coerceIn(0.5f, 3f)
+                zoom = (zoom * zoomChange).coerceIn(0.5f, 2f)
 
                 // childWidth isn't the real absolute width of the text, since graphicsLayer
                 // doesn't change the real bounding transform. We still need to consider the zoom.

@@ -31,7 +31,6 @@ class MemeRenderCalculator(
     companion object {
         private const val TEXT_PADDING_DP = 8f
         private const val STROKE_WIDTH_DP = 3f
-        private const val TEXT_WIDTH_FACTOR = 0.3f
     }
 
     /**
@@ -96,7 +95,7 @@ class MemeRenderCalculator(
         // Calculate constraint width (matching editor logic)
         val paddingDp = TEXT_PADDING_DP * 2  // 8dp * 2 = 16dp
         val paddingPx = paddingDp * density
-        val constraintWidth = ((templateSize.width * TEXT_WIDTH_FACTOR / box.scale) * density * scaleX - paddingPx * scaleX)
+        val constraintWidth = ((templateSize.width / box.scale) * scaleX - paddingPx * scaleX)
             .toInt()
             .coerceAtLeast(1)
 

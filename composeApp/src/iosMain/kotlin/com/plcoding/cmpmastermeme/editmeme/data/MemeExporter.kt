@@ -210,8 +210,6 @@ actual class MemeExporter {
         scaledBox: ScaledTextBox
     ) {
         val textNS = NSString.Companion.create(string = scaledBox.text)
-
-        // Always use center alignment
         val attributes = createMemeTextAttributes(scaledBox.scaledFontSize)
 
         val boundingRect = textNS.boundingRectWithSize(
@@ -223,52 +221,33 @@ actual class MemeExporter {
 
         val textHeight = boundingRect.useContents { size.height.toFloat() }
 
-        // Calculate box dimensions (drawing rectangle including padding)
-        val boxWidth = scaledBox.constraintWidth + scaledBox.textPaddingX * 2
+        // Get ACTUAL text width
+        val actualTextWidth = boundingRect.useContents { size.width.toFloat() }
+
+        // Use actual text width for box calculations
+        val boxWidth = actualTextWidth + scaledBox.textPaddingX * 2
         val boxHeight = textHeight + scaledBox.textPaddingY * 2
 
-        // Calculate center of the box (THIS is the pivot) - INLINE
+        // Calculate center based on ACTUAL text bounds
         val centerX = scaledBox.scaledOffset.x + boxWidth / 2f
         val centerY = scaledBox.scaledOffset.y + boxHeight / 2f
 
-        println("=== iOS DEBUG ===")
-        println("constraintWidth: ${scaledBox.constraintWidth}")
-        println("textPaddingX: ${scaledBox.textPaddingX}")
-        println("scaledOffset: ${scaledBox.scaledOffset}")
-        println("textHeight: $textHeight")
-        println("boxWidth: $boxWidth")
-        println("boxHeight: $boxHeight")
-        println("centerX (CALCULATED): $centerX")
-        println("centerY (CALCULATED): $centerY")
-        println("scale: ${scaledBox.scale}")
-        println("rotation: ${scaledBox.rotation}")
-
         CGContextSaveGState(context)
-
-        // Step 1: Translate to center
         CGContextTranslateCTM(context, centerX.toDouble(), centerY.toDouble())
-
-        // Step 2: Apply scale (now around center)
         CGContextScaleCTM(context, scaledBox.scale.toDouble(), scaledBox.scale.toDouble())
-
-        // Step 3: Apply rotation (now around center)
         CGContextRotateCTM(context, scaledBox.rotation * PI / 180.0)
 
-        // Step 4: Translate to drawing position (relative to center)
+        // Calculate drawing offset
+        // Text is centered within constraintWidth, so we need to account for that
+        val textCenteringOffset = (scaledBox.constraintWidth - actualTextWidth) / 2f
         CGContextTranslateCTM(
             context,
-            (-boxWidth / 2f + scaledBox.textPaddingX).toDouble(),
+            (-boxWidth / 2f + scaledBox.textPaddingX - textCenteringOffset).toDouble(),
             (-boxHeight / 2f + scaledBox.textPaddingY).toDouble()
         )
 
-        // Step 5: Draw text at origin in this transformed space
         textNS.drawWithRect(
-            rect = CGRectMake(
-                0.0,  // Draw at origin now
-                0.0,
-                scaledBox.constraintWidth.toDouble(),
-                textHeight.toDouble()
-            ),
+            rect = CGRectMake(0.0, 0.0, scaledBox.constraintWidth.toDouble(), textHeight.toDouble()),
             options = 1L shl 0,
             attributes = attributes,
             context = null
