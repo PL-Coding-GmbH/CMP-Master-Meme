@@ -116,35 +116,6 @@ class MemeRenderCalculator(
         )
     }
 
-    /**
-     * Calculate the center pivot point for rotation and scaling
-     */
-    fun calculatePivotPoints(
-        scaledBox: ScaledTextBox,
-        actualTextWidth: Float,
-        textHeight: Float
-    ): ScaledTextBox {
-        val outerBoxWidth = actualTextWidth + scaledBox.textPaddingX * 2
-        val outerBoxHeight = textHeight + scaledBox.textPaddingY * 2
-
-        val pivotX = scaledBox.scaledOffset.x + outerBoxWidth / 2f
-        val pivotY = scaledBox.scaledOffset.y + outerBoxHeight / 2f
-
-        return scaledBox.copy(
-            pivotX = pivotX,
-            pivotY = pivotY
-        )
-    }
-
-    /**
-     * Get text drawing position (offset by padding)
-     */
-    fun getTextDrawingPosition(scaledBox: ScaledTextBox): Offset {
-        return Offset(
-            x = scaledBox.scaledOffset.x + scaledBox.textPaddingX,
-            y = scaledBox.scaledOffset.y + scaledBox.textPaddingY
-        )
-    }
 }
 
 data class ScaleFactors(

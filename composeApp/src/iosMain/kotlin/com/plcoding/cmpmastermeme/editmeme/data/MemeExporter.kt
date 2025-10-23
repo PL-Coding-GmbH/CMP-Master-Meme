@@ -209,29 +209,11 @@ actual class MemeExporter {
         context: CGContextRef,
         scaledBox: ScaledTextBox
     ) {
-        // First measure with left alignment to determine line count
-        val leftAlignAttributes = createMemeTextAttributes(scaledBox.scaledFontSize, useCenter = false)
         val textNS = NSString.Companion.create(string = scaledBox.text)
 
-        val measureRect = textNS.boundingRectWithSize(
-            size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
-            options = 1L shl 0,
-            attributes = leftAlignAttributes,
-            context = null
-        )
+        // Always use center alignment
+        val attributes = createMemeTextAttributes(scaledBox.scaledFontSize)
 
-        val actualTextHeight = measureRect.useContents { size.height }
-        val lineHeight = scaledBox.scaledFontSize * 1.5
-        val isMultiLine = actualTextHeight > lineHeight
-
-        // Choose attributes based on line count
-        val attributes = if (isMultiLine) {
-            createMemeTextAttributes(scaledBox.scaledFontSize, useCenter = true)
-        } else {
-            leftAlignAttributes
-        }
-
-        // Calculate text size with final attributes
         val boundingRect = textNS.boundingRectWithSize(
             size = CGSizeMake(scaledBox.constraintWidth.toDouble(), 10000.0),
             options = 1L shl 0,
@@ -239,50 +221,53 @@ actual class MemeExporter {
             context = null
         )
 
-        val actualTextWidth = if (isMultiLine) {
-            // For multi-line centered text, use constraint width
-            scaledBox.constraintWidth.toFloat()
-        } else {
-            // For single-line left-aligned text, use actual width
-            boundingRect.useContents { size.width.toFloat() }
-        }
-        val finalTextHeight = boundingRect.useContents { size.height }
+        val textHeight = boundingRect.useContents { size.height.toFloat() }
 
-        val boxWithPivots = calculator.calculatePivotPoints(
-            scaledBox = scaledBox,
-            actualTextWidth = actualTextWidth,
-            textHeight = finalTextHeight.toFloat()
-        )
-        val textPosition = calculator.getTextDrawingPosition(boxWithPivots)
+        // Calculate box dimensions (drawing rectangle including padding)
+        val boxWidth = scaledBox.constraintWidth + scaledBox.textPaddingX * 2
+        val boxHeight = textHeight + scaledBox.textPaddingY * 2
+
+        // Calculate center of the box (THIS is the pivot) - INLINE
+        val centerX = scaledBox.scaledOffset.x + boxWidth / 2f
+        val centerY = scaledBox.scaledOffset.y + boxHeight / 2f
+
+        println("=== iOS DEBUG ===")
+        println("constraintWidth: ${scaledBox.constraintWidth}")
+        println("textPaddingX: ${scaledBox.textPaddingX}")
+        println("scaledOffset: ${scaledBox.scaledOffset}")
+        println("textHeight: $textHeight")
+        println("boxWidth: $boxWidth")
+        println("boxHeight: $boxHeight")
+        println("centerX (CALCULATED): $centerX")
+        println("centerY (CALCULATED): $centerY")
+        println("scale: ${scaledBox.scale}")
+        println("rotation: ${scaledBox.rotation}")
 
         CGContextSaveGState(context)
 
+        // Step 1: Translate to center
+        CGContextTranslateCTM(context, centerX.toDouble(), centerY.toDouble())
+
+        // Step 2: Apply scale (now around center)
+        CGContextScaleCTM(context, scaledBox.scale.toDouble(), scaledBox.scale.toDouble())
+
+        // Step 3: Apply rotation (now around center)
+        CGContextRotateCTM(context, scaledBox.rotation * PI / 180.0)
+
+        // Step 4: Translate to drawing position (relative to center)
         CGContextTranslateCTM(
-            c = context,
-            tx = boxWithPivots.pivotX.toDouble(),
-            ty = boxWithPivots.pivotY.toDouble()
-        )
-        CGContextScaleCTM(
-            c = context,
-            sx = boxWithPivots.scale.toDouble(),
-            sy = boxWithPivots.scale.toDouble()
-        )
-        CGContextRotateCTM(
-            c = context,
-            angle = boxWithPivots.rotation * PI / 180.0
-        )
-        CGContextTranslateCTM(
-            c = context,
-            tx = -boxWithPivots.pivotX.toDouble(),
-            ty = -boxWithPivots.pivotY.toDouble()
+            context,
+            (-boxWidth / 2f + scaledBox.textPaddingX).toDouble(),
+            (-boxHeight / 2f + scaledBox.textPaddingY).toDouble()
         )
 
+        // Step 5: Draw text at origin in this transformed space
         textNS.drawWithRect(
             rect = CGRectMake(
-                textPosition.x.toDouble(),
-                textPosition.y.toDouble(),
+                0.0,  // Draw at origin now
+                0.0,
                 scaledBox.constraintWidth.toDouble(),
-                actualTextHeight
+                textHeight.toDouble()
             ),
             options = 1L shl 0,
             attributes = attributes,
@@ -292,16 +277,13 @@ actual class MemeExporter {
         CGContextRestoreGState(context)
     }
 
-    /**
-     * Creates meme text attributes with white fill and black outline
-     */
-    private fun createMemeTextAttributes(fontSize: Float, useCenter: Boolean = false): Map<Any?, Any?> {
-        val font = UIFont.Companion.fontWithName("Impact", size = fontSize.toDouble())
+    // Simplified - always center aligned
+    private fun createMemeTextAttributes(fontSize: Float): Map<Any?, Any?> {
+        val font = UIFont.Companion.fontWithName("Impact", fontSize.toDouble())
             ?: UIFont.Companion.boldSystemFontOfSize(fontSize.toDouble())
 
-        val alignment = if (useCenter) NSTextAlignmentCenter else NSTextAlignmentLeft
         val paragraphStyle = NSMutableParagraphStyle().apply {
-            setAlignment(alignment)
+            setAlignment(NSTextAlignmentCenter)
             setLineBreakMode(NSLineBreakByWordWrapping)
         }
 
@@ -309,7 +291,7 @@ actual class MemeExporter {
             NSFontAttributeName to font,
             NSForegroundColorAttributeName to UIColor.Companion.whiteColor,
             NSStrokeColorAttributeName to UIColor.Companion.blackColor,
-            NSStrokeWidthAttributeName to NSNumber(-3.0), // Negative = fill + stroke
+            NSStrokeWidthAttributeName to NSNumber(-4.0),
             NSParagraphStyleAttributeName to paragraphStyle
         )
     }

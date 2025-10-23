@@ -27,31 +27,6 @@ import org.jetbrains.compose.resources.vectorResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
-fun SaveMemeContextSheetRoot(
-    modifier: Modifier = Modifier,
-    availableActions: List<MemeUiAction>,
-    onDismiss: () -> Unit,
-    sheetState: SheetState,
-) {
-    ModalBottomSheet(
-        modifier = modifier,
-        onDismissRequest = { onDismiss() },
-        sheetState = sheetState,
-        contentWindowInsets = { WindowInsets.navigationBars },
-        dragHandle = {
-            BottomSheetDefaults.DragHandle()
-        },
-        properties = ModalBottomSheetProperties(
-            shouldDismissOnBackPress = true
-        )
-    ) {
-        SaveMemeContextContent(
-            availableActions = availableActions
-        )
-    }
-}
-
-@Composable
 private fun SaveMemeContextContent(
     availableActions: List<MemeUiAction>,
     modifier: Modifier = Modifier

@@ -104,7 +104,6 @@ actual class MemeExporter(
             textSize = scaledBox.scaledFontSize
             typeface = impactTypeface
             color = Color.BLACK
-            textAlign = Paint.Align.LEFT
         }
 
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -112,7 +111,6 @@ actual class MemeExporter(
             textSize = scaledBox.scaledFontSize
             typeface = impactTypeface
             color = Color.WHITE
-            textAlign = Paint.Align.LEFT
         }
 
         val strokeLayout = StaticLayout.Builder.obtain(
@@ -137,46 +135,33 @@ actual class MemeExporter(
             .setIncludePad(false)
             .build()
 
-        // Check if text is single or multi-line
-        val isSingleLine = strokeLayout.lineCount <= 1
-
-        // For single-line text, calculate actual text width
-        // For multi-line text, use the full constraint width
-        val textWidth = if (isSingleLine) {
-            val actualLineWidth = if (strokeLayout.lineCount > 0) {
-                strokeLayout.getLineWidth(0)
-            } else {
-                0f
-            }
-            actualLineWidth
-        } else {
-            strokeLayout.width.toFloat()
-        }
         val textHeight = strokeLayout.height.toFloat()
 
-        val boxWithPivots = calculator.calculatePivotPoints(
-            scaledBox,
-            textWidth,
-            textHeight
-        )
+        // Calculate box dimensions (drawing rectangle including padding)
+        val boxWidth = scaledBox.constraintWidth + scaledBox.textPaddingX * 2
+        val boxHeight = textHeight + scaledBox.textPaddingY * 2
 
-        val textPosition = if (isSingleLine) {
-            // For single line, center the actual text width within the constraint
-            val centerOffset = (scaledBox.constraintWidth - textWidth) / 2f
-            calculator.getTextDrawingPosition(boxWithPivots).copy(
-                x = calculator.getTextDrawingPosition(boxWithPivots).x - centerOffset
+        // Calculate center of the box (THIS is the pivot)
+        val centerX = scaledBox.scaledOffset.x + boxWidth / 2f
+        val centerY = scaledBox.scaledOffset.y + boxHeight / 2f
+
+        canvas.withTranslation(centerX, centerY) {
+
+            // Step 1: Translate to center
+            // Step 2: Apply transformations (now around center)
+            scale(scaledBox.scale, scaledBox.scale)
+            rotate(scaledBox.rotation)
+
+            // Step 3: Translate back to drawing position (relative to center)
+            translate(
+                -boxWidth / 2f + scaledBox.textPaddingX,
+                -boxHeight / 2f + scaledBox.textPaddingY
             )
-        } else {
-            calculator.getTextDrawingPosition(boxWithPivots)
-        }
 
-        canvas.withScale(boxWithPivots.scale, boxWithPivots.scale, boxWithPivots.pivotX, boxWithPivots.pivotY) {
-            canvas.withRotation(boxWithPivots.rotation, boxWithPivots.pivotX, boxWithPivots.pivotY) {
-                canvas.withTranslation(textPosition.x, textPosition.y) {
-                    strokeLayout.draw(this)
-                    fillLayout.draw(this)
-                }
-            }
+            // Step 4: Draw text at origin in this transformed space
+            strokeLayout.draw(this)
+            fillLayout.draw(this)
+
         }
     }
 }

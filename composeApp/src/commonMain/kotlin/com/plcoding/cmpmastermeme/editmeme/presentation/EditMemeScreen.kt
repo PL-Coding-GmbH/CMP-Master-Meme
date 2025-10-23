@@ -325,10 +325,10 @@ private fun DraggableContainer(
                     modifier = Modifier,
                     // When zooming in by 2x, the text box should be visually smaller
                     maxWidth = with(density) {
-                        (parentWidth * 0.8f / zoom).toDp()
+                        (parentWidth / zoom).toDp()
                     },
                     maxHeight = with(density) {
-                        (parentHeight * 0.8f / zoom).toDp()
+                        (parentHeight / zoom).toDp()
                     },
                     isSelected = isSelected,
                     isEditing = isEditing,
