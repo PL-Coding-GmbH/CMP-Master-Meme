@@ -42,8 +42,12 @@ class MemeRenderCalculator(
         bitmapHeight: Int,
         displaySize: IntSize
     ): ScaleFactors {
+        // When the bitmap size is larger than the canvas size, we need to scale up everything
         val scaleX = if (displaySize.width > 0) bitmapWidth.toFloat() / displaySize.width else 1f
         val scaleY = if (displaySize.height > 0) bitmapHeight.toFloat() / displaySize.height else 1f
+
+        // Even though not applicable here, the bitmap may not have the same aspect ratio as the
+        // canvas
         val bitmapScale = (scaleX + scaleY) / 2f
         
         return ScaleFactors(scaleX, scaleY, bitmapScale)
@@ -113,7 +117,7 @@ class MemeRenderCalculator(
     }
 
     /**
-     * Calculate pivot points based on actual text dimensions
+     * Calculate the center pivot point for rotation and scaling
      */
     fun calculatePivotPoints(
         scaledBox: ScaledTextBox,

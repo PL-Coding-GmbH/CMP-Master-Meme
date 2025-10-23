@@ -44,6 +44,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -191,6 +192,7 @@ private fun DraggableContainer(
     ) {
         val parentWidth = constraints.maxWidth
         val parentHeight = constraints.maxHeight
+        val density = LocalDensity.current
 
         children.forEach { child ->
             var childWidth by remember(child.id) { mutableStateOf(0) }
@@ -321,8 +323,13 @@ private fun DraggableContainer(
                 MemeTextBox(
                     memeText = child,
                     modifier = Modifier,
-                    maxWidth = (parentWidth * 0.3f / zoom).dp,
-                    maxHeight = (parentHeight * 0.3f / zoom).dp,
+                    // When zooming in by 2x, the text box should be visually smaller
+                    maxWidth = with(density) {
+                        (parentWidth * 0.8f / zoom).toDp()
+                    },
+                    maxHeight = with(density) {
+                        (parentHeight * 0.8f / zoom).toDp()
+                    },
                     isSelected = isSelected,
                     isEditing = isEditing,
                     onTextInputChange = {

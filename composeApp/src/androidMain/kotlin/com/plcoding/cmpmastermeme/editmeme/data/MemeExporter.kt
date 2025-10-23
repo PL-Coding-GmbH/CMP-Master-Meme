@@ -33,6 +33,7 @@ actual class MemeExporter(
         density = context.resources.displayMetrics.density
     )
 
+    // Temporarily saves the file and returns a shareable file path
     actual suspend fun exportMeme(
         backgroundImageBytes: ByteArray,
         textBoxes: List<MemeText>,
@@ -40,14 +41,16 @@ actual class MemeExporter(
         fileName: String,
         saveStrategy: SaveToStorageStrategy,
     ) = withContext(Dispatchers.IO) {
+        var bitmap: Bitmap? = null
+        var outputBitmap: Bitmap? = null
         try {
-            val bitmap =
+            bitmap =
                 BitmapFactory.decodeByteArray(backgroundImageBytes, 0, backgroundImageBytes.size)
-            val outputBitmap = renderMeme(bitmap, textBoxes, canvasSize)
+            outputBitmap = renderMeme(bitmap, textBoxes, canvasSize)
             val filePath = saveStrategy.getFilePath(fileName)
             val file = File(filePath)
             FileOutputStream(file).use { out ->
-                outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                outputBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
             }
             bitmap.recycle()
             outputBitmap.recycle()
@@ -55,6 +58,9 @@ actual class MemeExporter(
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Result.failure(e)
+        } finally {
+            bitmap?.recycle()
+            outputBitmap?.recycle()
         }
     }
 
@@ -66,17 +72,16 @@ actual class MemeExporter(
         val output = background.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(output)
 
-        // Use common calculator
         val scaleFactors = calculator.calculateScaleFactors(
-            background.width,
-            background.height,
-            displaySize
+            bitmapWidth = background.width,
+            bitmapHeight = background.height,
+            displaySize = displaySize
         )
 
         val scaledBoxes = calculator.calculateScaledTextBoxes(
-            textBoxes,
-            scaleFactors,
-            displaySize
+            textBoxes = textBoxes,
+            scaleFactors = scaleFactors,
+            templateSize = displaySize
         )
 
         scaledBoxes.forEach { scaledBox ->
