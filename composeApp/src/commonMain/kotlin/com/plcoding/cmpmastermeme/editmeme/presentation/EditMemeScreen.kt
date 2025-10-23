@@ -214,46 +214,71 @@ private fun DraggableContainer(
             }
 
             val gestureState = rememberTransformableState { zoomChange, panChange, rotationChange ->
-                // 1) Update rotation
+                // 1) Just add the delta
                 rotation += rotationChange
 
-                // 2) Rotate pan change to account for rotation
+                // 2) When using graphicsLayer, Compose will rotate the coordinate system
+                // of the following modifiers. We have to work against that.
+
+                // If rotation = 0° -> The element should move 10px to the right
+                // If rotation = 90° -> The element's right is now pointing up, so it should move
+                // 10px up
+
+                // But panChange gives us the movement in screen coordinates, but we want it in
+                // the text's local rotated coordinates.
+
+                // Angle calculations all work with radians: degrees * PI / 180 = radians
                 val angle = rotation * kotlin.math.PI.toFloat() / 180f
                 val cos = kotlin.math.cos(angle)
                 val sin = kotlin.math.sin(angle)
 
+                // If the text is pointing up with 90° and we drag right, we need to transform that
+                // into a bottom drag
                 val rotatedPanX = panChange.x * cos - panChange.y * sin
                 val rotatedPanY = panChange.x * sin + panChange.y * cos
 
                 // 3) Update zoom
-                zoom = (zoom * zoomChange).coerceIn(0.5f, 5f)
+                zoom = (zoom * zoomChange).coerceIn(0.5f, 3f)
 
-                // 4) Calculate the axis-aligned bounding box of the rotated element
+                // childWidth isn't the real absolute width of the text, since graphicsLayer
+                // doesn't change the real bounding transform. We still need to consider the zoom.
                 val scaledWidth = childWidth * zoom
                 val scaledHeight = childHeight * zoom
 
-                // Visual bounds after rotation (absolute values since rotation can be any angle)
+                // This formula projects the rectangle's edges onto the X and Y axes.
+                // Since the absolute bounds aren't the visual bounds, we need to account for that.
                 val visualWidth =
                     kotlin.math.abs(scaledWidth * cos) + kotlin.math.abs(scaledHeight * sin)
                 val visualHeight =
                     kotlin.math.abs(scaledWidth * sin) + kotlin.math.abs(scaledHeight * cos)
 
-                // Offset from layout center to visual center due to scaling
+                // When scaling a box, its top left corner moves. This accounts for that.
                 val scaleOffsetX = (scaledWidth - childWidth) / 2
                 val scaleOffsetY = (scaledHeight - childHeight) / 2
 
-                // Additional offset due to rotation changing the bounding box
+                // When rotating, the visual bounding box grows
+                // It's the little extra offset that rotation adds.
+                // This together with the scaleOffset makes up the final position
+                // of the rotated scaled box.
                 val rotationOffsetX = (visualWidth - scaledWidth) / 2
                 val rotationOffsetY = (visualHeight - scaledHeight) / 2
 
-                // Total visual extent
+                // The goal: Keep the visual bounds of the element inside the parent
+                // Min bound: The left/top edge shouldn't go past 0
+                // Max bound: The right/bottom edge shouldn't go past parent size
+                // This is the visual bounding boxes min mac bounds.
                 val minX = scaleOffsetX + rotationOffsetX
                 val maxX = parentWidth - childWidth - scaleOffsetX - rotationOffsetX
                 val minY = scaleOffsetY + rotationOffsetY
                 val maxY = parentHeight - childHeight - scaleOffsetY - rotationOffsetY
 
+                // Important to understand: This is the element's UNTRANSFORMED position
+                // We can't use scale and rotation offsets here.
                 offset = Offset(
+                    // zoom * rotatedPanX accounts for zoom, since moving a 2x zoomed in element
+                    // will normally require 2x as much touch distance - not what we want.
                     x = (offset.x + zoom * rotatedPanX).coerceIn(
+                        // With some extreme zooms, minX could end up larger than maxX.
                         minOf(minX, maxX),
                         maxOf(minX, maxX)
                     ),
@@ -336,35 +361,6 @@ private fun DraggableContainer(
 }
 
 @Composable
-private fun TopBar(
-    onGoBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    CenterAlignedTopAppBar(
-        modifier = modifier,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            navigationIconContentColor = MaterialTheme.colorScheme.secondary,
-        ),
-        title = {
-            Text(
-                text = Res.string.title_new_meme.asString(),
-                style = MaterialTheme.typography.headlineLarge
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onGoBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        }
-    )
-}
-
-@Composable
 private fun BottomBar(
     modifier: Modifier = Modifier,
     onAddTextClick: () -> Unit,
@@ -375,7 +371,7 @@ private fun BottomBar(
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 32.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
     ) {
         MemeSecondaryButton(

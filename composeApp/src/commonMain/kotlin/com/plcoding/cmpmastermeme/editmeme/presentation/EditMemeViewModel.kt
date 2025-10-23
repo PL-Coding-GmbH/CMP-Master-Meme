@@ -41,8 +41,6 @@ class EditMemeViewModel(
     private val eventChannel = Channel<EditMemeEvent>()
     val events = eventChannel.receiveAsFlow()
 
-    private var selectedTextFontSizeCache: Float? = null
-
     fun onAction(action: EditMemeAction) {
         when (action) {
             EditMemeAction.OnAddNewMemeTextClick -> createTextBox()
@@ -187,7 +185,6 @@ class EditMemeViewModel(
     }
 
     private fun selectTextBox(id: String) {
-        selectedTextFontSizeCache = state.value.memeTexts.firstOrNull { it.id == id }?.fontSize
         _state.update {
             it.copy(
                 textBoxInteraction = TextBoxInteractionState.Selected(id)
